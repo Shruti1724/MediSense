@@ -19,6 +19,10 @@ _DB = {
     "warf 5": ("Warf 5", "warfarin", "prescription-only", "anticoagulant", "preventing blood clots"),
     "cetzine": ("Cetzine", "cetirizine", "OTC", "antihistamine", "allergy symptoms"),
     "pan 40": ("Pan 40", "pantoprazole", "prescription-only", "ppi", "acidity and reflux"),
+    "5% dextrose": ("5% Dextrose", "dextrose", "prescription-only", "intravenous fluid / carbohydrate replenisher", "hypoglycemia and emergency fluid therapy"),
+    "dextrose": ("5% Dextrose", "dextrose", "prescription-only", "intravenous fluid / carbohydrate replenisher", "hypoglycemia and emergency fluid therapy"),
+    "ors": ("ORS", "oral rehydration salts", "OTC", "electrolyte replenisher", "dehydration and electrolyte restoration"),
+    "ors sachets": ("ORS", "oral rehydration salts", "OTC", "electrolyte replenisher", "dehydration and electrolyte restoration"),
 }
 
 _INFO = {
@@ -53,6 +57,22 @@ _INFO = {
         "pregnancy": "Needs specialist advice.",
         "side_effects": "Bleeding, bruising.",
         "interactions": "Interacts with painkillers like ibuprofen.",
+    },
+    "dextrose": {
+        "uses": "Commonly used to rapidly restore blood sugar levels in hypoglycemia and provide hydration.",
+        "warnings": "Requires medical administration (intravenous infusion). Blood glucose must be monitored.",
+        "who_should_avoid": "People with severe hyperglycemia unless directed by an emergency physician.",
+        "pregnancy": "Used under emergency medical direction during pregnancy.",
+        "side_effects": "Vein irritation, localized fluid infiltration.",
+        "interactions": "Interacts with insulin and diabetic medications.",
+    },
+    "oral rehydration salts": {
+        "uses": "Commonly used to treat dehydration and restore electrolyte-water balance.",
+        "warnings": "Dissolve properly in the exact recommended volume of potable water.",
+        "who_should_avoid": "Patients with severe intractable vomiting or acute renal failure should consult a doctor.",
+        "pregnancy": "Generally safe for rehydration during pregnancy.",
+        "side_effects": "Rare. Mild nausea if consumed too fast.",
+        "interactions": "Check with a doctor if taking potassium-sparing medications.",
     },
 }
 
@@ -99,6 +119,13 @@ def get_condition_info(drug_classes: List[str]) -> dict:
             commonly_used_for="This combination is commonly used for infections with fever.",
             symptoms=["fever", "cough", "sore throat"],
             red_flags=["trouble breathing", "chest pain", "fever lasting more than 3 days"],
+            sources=[FAKE_SOURCE]).model_dump()
+    if any("electrolyte" in c or "carbohydrate" in c or "intravenous fluid" in c for c in classes):
+        return ConditionInfo(
+            found=True,
+            commonly_used_for="This treatment is commonly used for acute hypoglycemia and fluid/electrolyte rehydration.",
+            symptoms=["giddiness", "dizziness", "restlessness", "weakness", "sweating"],
+            red_flags=["loss of consciousness", "seizures", "persistent vomiting", "confusion"],
             sources=[FAKE_SOURCE]).model_dump()
     return ConditionInfo(found=False).model_dump()
 
