@@ -1,0 +1,12 @@
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+venv/
+env/
+.env
+backend/uploads/*
+!backend/uploads/.gitkeep
+backend/tests/assets/*
+!backend/tests/assets/.gitkeep
+plan_extracted.txt
