@@ -43,7 +43,14 @@ def match_medicine(name: str) -> dict:
     """Match a typed medicine name against the local CSV without raising errors."""
     try:
         typed_name = (name or "").strip()
+        cleaned_typed = re.sub(
+            r"^(?:tab(?:let)?|cap(?:sule)?|syp|syrup|inj(?:ection)?|oint(?:ment)?)\.?\s+",
+            "",
+            typed_name,
+            flags=re.IGNORECASE,
+        ).strip()
         normalised_name = _normalise(typed_name)
+        normalised_clean = _normalise(cleaned_typed)
         if not normalised_name:
             return _empty_match()
 
@@ -53,10 +60,13 @@ def match_medicine(name: str) -> dict:
 
         comparisons = []
         for row_index, row in enumerate(rows):
-            brand_score = fuzz.ratio(normalised_name, _normalise(row["brand"])) / 100
-            generic_score = fuzz.ratio(normalised_name, _normalise(row["generic"])) / 100
-            comparisons.append((brand_score, row_index, "brand"))
-            comparisons.append((generic_score, row_index, "generic"))
+            brand_norm = _normalise(row["brand"])
+            generic_norm = _normalise(row["generic"])
+            b_score = max(fuzz.ratio(normalised_name, brand_norm), fuzz.ratio(normalised_clean, brand_norm)) / 100
+            g_score = max(fuzz.ratio(normalised_name, generic_norm), fuzz.ratio(normalised_clean, generic_norm)) / 100
+            comparisons.append((b_score, row_index, "brand"))
+            comparisons.append((g_score, row_index, "generic"))
+
 
         best_score, best_row_index, best_field = max(
             comparisons,

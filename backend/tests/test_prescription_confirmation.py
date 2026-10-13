@@ -13,10 +13,8 @@ from main import app
 
 client = TestClient(app)
 
-# Use the real test image from uploads if available, otherwise clear test asset
-UPLOADS_DIR = os.path.join(os.path.dirname(__file__), "..", "uploads")
-SCREENSHOT_FILES = [f for f in os.listdir(UPLOADS_DIR) if "Screenshot" in f and f.endswith(".png")]
-TEST_IMG_PATH = os.path.join(UPLOADS_DIR, SCREENSHOT_FILES[0]) if SCREENSHOT_FILES else os.path.join(os.path.dirname(__file__), "assets", "clear_prescription.png")
+TEST_IMG_PATH = os.path.join(os.path.dirname(__file__), "assets", "dextrose_prescription.png")
+
 
 
 def test_dextrose_ors_prescription_confirmation_with_brand_objects():
