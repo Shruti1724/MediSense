@@ -1,9 +1,12 @@
 import React, { useState, useRef } from 'react';
+import { startWithImage, confirmMedicines } from '../../api';
 
 export default function UploadVerifyScreen({ medicines, onUpdateMedicines, onNavigate }) {
   const [showBlurryAlert, setShowBlurryAlert] = useState(false);
   const [uploadedImageName, setUploadedImageName] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const fileInputRef = useRef(null);
 
   const handleUpdateMedicine = (id, field, value) => {
@@ -24,6 +27,7 @@ export default function UploadVerifyScreen({ medicines, onUpdateMedicines, onNav
           name: medName,
           strength,
           confidence: 'High',
+          suggestions: [],
         };
       }
       return medicine;
@@ -48,21 +52,70 @@ export default function UploadVerifyScreen({ medicines, onUpdateMedicines, onNav
     onUpdateMedicines([...medicines, newMed]);
   };
 
-  const handleFileChange = (event) => {
-    if (event.target.files && event.target.files[0]) {
-      const file = event.target.files[0];
-      setUploadedImageName(file.name);
-      setShowBlurryAlert(false);
+  // Sends the photo to the backend and fills the table with what comes back
+  const uploadFile = async (file) => {
+    setUploadedImageName(file.name);
+    setShowBlurryAlert(false);
+    setError(null);
+    setLoading(true);
+    try {
+      const data = await startWithImage('prescription', file);
+      sessionStorage.setItem('medisense_session', data.session_id);
+      if (data.is_blurry) {
+        setShowBlurryAlert(true);
+        onUpdateMedicines([]);
+        return;
+      }
+      const rows = (data.extracted_medicines || []).map((m, i) => {
+        const match = data.matches?.[i];
+        return {
+          id: `rx-${Date.now()}-${i}`,
+          name: match?.matched ? match.brand : m.brand || m.raw || '',
+          strength: m.strength || '',
+          timing: m.frequency || '',
+          confidence: m.confidence >= 0.8 ? 'High' : 'Check this',
+          suggestions: !match?.matched
+            ? (match?.candidates || []).map((c) => ({ name: c, strength: '' }))
+            : [],
+        };
+      });
+      onUpdateMedicines(rows);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
     }
+  };
+
+  const handleFileChange = (event) => {
+    if (event.target.files && event.target.files[0]) uploadFile(event.target.files[0]);
   };
 
   const handleDrop = (event) => {
     event.preventDefault();
     setIsDragging(false);
-    if (event.dataTransfer.files && event.dataTransfer.files[0]) {
-      const file = event.dataTransfer.files[0];
-      setUploadedImageName(file.name);
-      setShowBlurryAlert(false);
+    if (event.dataTransfer.files && event.dataTransfer.files[0]) uploadFile(event.dataTransfer.files[0]);
+  };
+
+  // Sends the edited list to /confirm, then moves to the next screen
+  const handleContinue = async () => {
+    const sessionId = sessionStorage.getItem('medisense_session');
+    if (!sessionId) {
+      setError('Please upload a photo first.');
+      return;
+    }
+    setError(null);
+    setLoading(true);
+    try {
+      const list = medicines
+        .filter((m) => m.name.trim())
+        .map((m) => ({ raw: m.name, brand: m.name, strength: m.strength, frequency: m.timing }));
+      await confirmMedicines(sessionId, list);
+      onNavigate('processing');
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -334,11 +387,15 @@ export default function UploadVerifyScreen({ medicines, onUpdateMedicines, onNav
         </table>
       </div>
 
+      {error && <p className="text-[#b3261e] mb-3">{error}</p>}
+      {loading && <p className="text-[#5a605c] mb-3">Working...</p>}
+
       <div className="flex justify-end">
         <button
           type="button"
-          onClick={() => onNavigate('processing')}
-          className="inline-flex items-center justify-center font-label-md text-[14px] bg-[#1f5a46] text-white px-5 py-2.5 hover:bg-[#004230] transition-colors border border-[#1f5a46] cursor-pointer"
+          onClick={handleContinue}
+          disabled={loading}
+          className="inline-flex items-center justify-center font-label-md text-[14px] bg-[#1f5a46] text-white px-5 py-2.5 hover:bg-[#004230] transition-colors border border-[#1f5a46] cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
           style={{ borderRadius: '4px' }}
         >
           Continue to check list
