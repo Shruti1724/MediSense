@@ -9,7 +9,7 @@ import CabinetScreen from './components/screens/CabinetScreen';
 import ReportScreen from './components/screens/ReportScreen';
 import AskScreen from './components/screens/AskScreen';
 import { SCREEN_PATHS } from './navigation';
-import { initialCabinetRecords, initialPrescriptionMeds } from './data/clinicalData';
+import { initialCabinetRecords } from './data/clinicalData';
 import ResultPage from './pages/ResultPage';
 
 function PlaceholderScreen() {
@@ -19,7 +19,7 @@ function PlaceholderScreen() {
 function AppContent() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [medicines, setMedicines] = useState(initialPrescriptionMeds);
+  const [medicines, setMedicines] = useState([]);
   const [cabinetRecords, setCabinetRecords] = useState(initialCabinetRecords);
 
   const currentScreen = Object.entries(SCREEN_PATHS).find(([, path]) => path === location.pathname)?.[0] ?? 'home';

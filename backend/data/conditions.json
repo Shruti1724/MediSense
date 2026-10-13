@@ -1,0 +1,82 @@
+[
+  {
+    "id": "fever_mild_pain",
+    "name": "Fever and mild pain",
+    "drug_classes": ["analgesic/antipyretic"],
+    "commonly_used_for": "fever and mild pain",
+    "symptoms": ["feeling hot or cold", "feeling shivery", "sweating", "skin that is warm and red"],
+    "red_flags": ["a high temperature that is not getting better or is getting worse"],
+    "sources": ["https://www.nhs.uk/conditions/fever-in-adults/"],
+    "retrieved_on": "2026-10-13"
+  },
+  {
+    "id": "common_cold_cough",
+    "name": "Common cold and cough",
+    "drug_classes": ["analgesic/antipyretic", "antihistamine", "nsaid"],
+    "commonly_used_for": "common cold and cough symptoms",
+    "symptoms": ["a blocked or runny nose", "sneezing", "a sore throat", "a cough", "feeling tired and unwell"],
+    "red_flags": ["shortness of breath", "chest pain", "cold symptoms that do not get better after 10 days", "a cough for more than 3 weeks"],
+    "sources": ["https://www.nhs.uk/conditions/common-cold/"],
+    "retrieved_on": "2026-10-13"
+  },
+  {
+    "id": "hay_fever",
+    "name": "Allergy and hay fever",
+    "drug_classes": ["antihistamine", "leukotriene antagonist/antihistamine"],
+    "commonly_used_for": "allergy and hay fever symptoms",
+    "symptoms": ["sneezing and coughing", "a runny or blocked nose", "itchy red or watery eyes", "an itchy throat mouth nose or ears", "headache", "feeling tired"],
+    "red_flags": ["symptoms that are getting worse", "symptoms that do not improve after taking medicines from the pharmacy"],
+    "sources": ["https://www.nhs.uk/conditions/hay-fever/"],
+    "retrieved_on": "2026-10-13"
+  },
+  {
+    "id": "acidity_heartburn",
+    "name": "Acidity and heartburn",
+    "drug_classes": ["ppi", "h2 blocker", "antacid"],
+    "commonly_used_for": "acidity and heartburn symptoms",
+    "symptoms": ["a burning sensation in the middle of the chest", "an unpleasant sour taste in the mouth", "a cough or hiccups that keep coming back", "a hoarse voice", "bloating and feeling sick"],
+    "red_flags": ["lifestyle changes and pharmacy medicines are not helping", "heartburn on most days", "food getting stuck in the throat", "frequently being sick", "losing weight for no reason"],
+    "sources": ["https://www.nhs.uk/conditions/heartburn-and-acid-reflux/"],
+    "retrieved_on": "2026-10-13"
+  },
+  {
+    "id": "urinary_tract_infection",
+    "name": "Urinary tract infection",
+    "drug_classes": ["antibiotic", "analgesic/antipyretic"],
+    "commonly_used_for": "urinary tract infection symptoms",
+    "symptoms": ["pain or a burning sensation when peeing", "needing to pee more often than usual", "cloudy pee", "lower tummy pain", "pain in the back just under the ribs", "feeling tired or weak"],
+    "red_flags": ["a very high or low temperature", "symptoms that get worse quickly", "symptoms that do not improve within 48 hours", "pain in the lower tummy or back", "blood in the pee", "confusion or drowsiness"],
+    "sources": ["https://www.nhs.uk/conditions/urinary-tract-infections-utis/"],
+    "retrieved_on": "2026-10-13"
+  },
+  {
+    "id": "diarrhoea",
+    "name": "Diarrhoea",
+    "drug_classes": ["rehydration"],
+    "commonly_used_for": "fluid loss associated with diarrhoea and vomiting",
+    "symptoms": ["diarrhoea", "vomiting", "signs of dehydration", "dark smelly pee", "peeing less than usual"],
+    "red_flags": ["being unable to keep fluid down", "bloody diarrhoea", "diarrhoea for more than 7 days", "vomiting for more than 2 days", "severe difficulty breathing", "confusion or not responding as usual"],
+    "sources": ["https://www.nhs.uk/conditions/diarrhoea-and-vomiting/"],
+    "retrieved_on": "2026-10-13"
+  },
+  {
+    "id": "nausea_vomiting",
+    "name": "Nausea and vomiting",
+    "drug_classes": ["antiemetic", "rehydration"],
+    "commonly_used_for": "nausea and vomiting symptoms",
+    "symptoms": ["feeling sick", "vomiting", "headache and a high temperature", "heartburn or bloating after eating"],
+    "red_flags": ["nausea that does not improve in a few days", "nausea that keeps coming back", "chest pain that feels tight or heavy", "shortness of breath"],
+    "sources": ["https://www.nhs.uk/conditions/feeling-sick-nausea/"],
+    "retrieved_on": "2026-10-13"
+  },
+  {
+    "id": "headache",
+    "name": "Headache",
+    "drug_classes": ["analgesic/antipyretic", "nsaid"],
+    "commonly_used_for": "headache symptoms",
+    "symptoms": ["headache", "headache with a cold or flu", "headache associated with stress", "headache associated with dehydration"],
+    "red_flags": ["a headache that is not getting better or is getting worse", "vision or eye problems", "being sick", "a headache that started suddenly and is extremely painful", "numbness or weakness", "difficulty speaking or walking", "drowsiness or confusion", "a very high temperature and a stiff neck"],
+    "sources": ["https://www.nhs.uk/conditions/headaches/"],
+    "retrieved_on": "2026-10-13"
+  }
+]

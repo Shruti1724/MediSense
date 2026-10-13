@@ -1,13 +1,24 @@
-import React, { useState, useRef } from 'react';
-import { startWithImage, confirmMedicines } from '../../api';
+import React, { useEffect, useState, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
+import { startWithImage, startWithText, confirmMedicines } from '../../api';
 
 export default function UploadVerifyScreen({ medicines, onUpdateMedicines, onNavigate }) {
+  const location = useLocation();
+  const [mode, setMode] = useState(() => location.state?.mode || sessionStorage.getItem('medisense_mode') || 'prescription');
   const [showBlurryAlert, setShowBlurryAlert] = useState(false);
   const [uploadedImageName, setUploadedImageName] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [typedName, setTypedName] = useState('');
   const fileInputRef = useRef(null);
+
+  useEffect(() => {
+    const nextMode = location.state?.mode || sessionStorage.getItem('medisense_mode') || 'prescription';
+    setMode(nextMode === 'home' ? 'home' : 'prescription');
+    sessionStorage.setItem('medisense_mode', nextMode === 'home' ? 'home' : 'prescription');
+    if (location.state?.mode) sessionStorage.removeItem('medisense_session');
+  }, [location.state?.mode]);
 
   const handleUpdateMedicine = (id, field, value) => {
     const updated = medicines.map((medicine) => {
@@ -52,6 +63,30 @@ export default function UploadVerifyScreen({ medicines, onUpdateMedicines, onNav
     onUpdateMedicines([...medicines, newMed]);
   };
 
+  const applyStartResponse = (data) => {
+    if (data.session_id) sessionStorage.setItem('medisense_session', data.session_id);
+    if (data.is_blurry) {
+      setShowBlurryAlert(true);
+      onUpdateMedicines([]);
+      return false;
+    }
+    const extracted = data.extracted_medicines || [];
+    const rows = extracted.map((medicine, index) => {
+      const match = data.matches?.[index];
+      return {
+        id: `rx-${Date.now()}-${index}`,
+        name: match?.matched ? match.brand : medicine.brand || medicine.raw || '',
+        strength: medicine.strength || '',
+        timing: medicine.frequency || '',
+        confidence: medicine.confidence >= 0.8 ? 'High' : 'Check this',
+        suggestions: !match?.matched ? (match?.candidates || []).map((candidate) => ({ name: candidate, strength: '' })) : [],
+      };
+    });
+    onUpdateMedicines(rows);
+    if (!rows.length && !data.result) setError('We could not read a medicine name. Please type it.');
+    return true;
+  };
+
   // Sends the photo to the backend and fills the table with what comes back
   const uploadFile = async (file) => {
     setUploadedImageName(file.name);
@@ -59,29 +94,34 @@ export default function UploadVerifyScreen({ medicines, onUpdateMedicines, onNav
     setError(null);
     setLoading(true);
     try {
-      const data = await startWithImage('prescription', file);
-      sessionStorage.setItem('medisense_session', data.session_id);
-      if (data.is_blurry) {
-        setShowBlurryAlert(true);
-        onUpdateMedicines([]);
-        return;
-      }
-      const rows = (data.extracted_medicines || []).map((m, i) => {
-        const match = data.matches?.[i];
-        return {
-          id: `rx-${Date.now()}-${i}`,
-          name: match?.matched ? match.brand : m.brand || m.raw || '',
-          strength: m.strength || '',
-          timing: m.frequency || '',
-          confidence: m.confidence >= 0.8 ? 'High' : 'Check this',
-          suggestions: !match?.matched
-            ? (match?.candidates || []).map((c) => ({ name: c, strength: '' }))
-            : [],
-        };
-      });
-      onUpdateMedicines(rows);
+      const data = await startWithImage(mode, file);
+      const hasRows = applyStartResponse(data);
+      if (mode === 'home' && data.result && !data.requires_confirmation && hasRows) onNavigate('processing');
     } catch (e) {
       setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleTypedCheck = async () => {
+    const name = typedName.trim();
+    if (!name) {
+      setError('Please type a medicine name first.');
+      return;
+    }
+    setError(null);
+    setLoading(true);
+    try {
+      const data = await startWithText('home', name);
+      sessionStorage.setItem('medisense_session', data.session_id);
+      if (data.result && !data.requires_confirmation) {
+        onNavigate('processing');
+        return;
+      }
+      applyStartResponse(data);
+    } catch (e) {
+      setError(e.message || 'Could not reach the server. Is the backend running?');
     } finally {
       setLoading(false);
     }
@@ -99,17 +139,22 @@ export default function UploadVerifyScreen({ medicines, onUpdateMedicines, onNav
 
   // Sends the edited list to /confirm, then moves to the next screen
   const handleContinue = async () => {
-    const sessionId = sessionStorage.getItem('medisense_session');
-    if (!sessionId) {
-      setError('Please upload a photo first.');
+    const list = medicines
+      .filter((medicine) => medicine.name.trim())
+      .map((medicine) => ({ raw: medicine.name, brand: medicine.name, strength: medicine.strength, frequency: medicine.timing }));
+    if (!list.length) {
+      setError('Please type a medicine name before continuing.');
       return;
     }
     setError(null);
     setLoading(true);
     try {
-      const list = medicines
-        .filter((m) => m.name.trim())
-        .map((m) => ({ raw: m.name, brand: m.name, strength: m.strength, frequency: m.timing }));
+      let sessionId = sessionStorage.getItem('medisense_session');
+      if (!sessionId) {
+        const started = await startWithText(mode, list[0].brand);
+        sessionId = started.session_id;
+        sessionStorage.setItem('medisense_session', sessionId);
+      }
       await confirmMedicines(sessionId, list);
       onNavigate('processing');
     } catch (e) {
@@ -121,14 +166,24 @@ export default function UploadVerifyScreen({ medicines, onUpdateMedicines, onNav
 
   return (
     <div className="w-full max-w-[720px] mx-auto pb-12">
-      <p className="font-body-md text-[15px] text-[#5a605c] mb-2">Step 1 of 3: Add your photo</p>
+      <p className="font-body-md text-[15px] text-[#5a605c] mb-2">{mode === 'home' ? 'Step 1 of 3: Add your strip or box' : 'Step 1 of 3: Add your photo'}</p>
 
       <h1
         className="font-headline-lg font-semibold tracking-tight text-[#1c1f1d] mb-6 text-[32px] sm:text-[36px] leading-[42px]"
         style={{ fontFamily: "'Source Serif 4', Georgia, serif" }}
       >
-        Upload and verify prescription
+        {mode === 'home' ? 'Check a medicine you have' : 'Upload and verify prescription'}
       </h1>
+
+      {mode === 'home' && (
+        <div className="bg-white border border-[#d6d4cc] p-4 mb-6" style={{ borderRadius: '4px' }}>
+          <label htmlFor="typed-medicine-name" className="block font-title-md text-[16px] text-[#1c1f1d] mb-2 font-semibold">Type the name from your strip or box</label>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <input id="typed-medicine-name" type="text" value={typedName} onChange={(event) => setTypedName(event.target.value)} placeholder="e.g. Dolo 650" className="flex-1 bg-white border border-[#d6d4cc] p-2 text-[14px] focus:ring-1 focus:ring-[#1f5a46] focus:outline-none" style={{ borderRadius: '4px' }} />
+            <button type="button" onClick={handleTypedCheck} disabled={loading || !typedName.trim()} className="bg-[#1f5a46] text-white px-4 py-2 font-label-md text-[14px] border border-[#1f5a46] cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed" style={{ borderRadius: '4px' }}>Check this medicine</button>
+          </div>
+        </div>
+      )}
 
       {showBlurryAlert && (
         <div
@@ -192,7 +247,7 @@ export default function UploadVerifyScreen({ medicines, onUpdateMedicines, onNav
             {uploadedImageName ? `Uploaded: ${uploadedImageName}` : 'Drop a photo here or choose a file'}
           </p>
           <p className="font-body-sm text-[13px] text-[#5a605c] mb-2">
-            {uploadedImageName ? 'Click to replace image' : 'JPG or PNG'}
+            {uploadedImageName ? 'Click to replace image' : mode === 'home' ? 'JPG or PNG, photo of a strip or box' : 'JPG or PNG'}
           </p>
           <button
             type="button"
@@ -209,7 +264,7 @@ export default function UploadVerifyScreen({ medicines, onUpdateMedicines, onNav
 
       <div className="p-4 mb-6 bg-white border border-[#d6d4cc]" style={{ borderRadius: '4px' }}>
         <p className="font-body-md text-[15px] leading-relaxed text-[#1c1f1d]">
-          Please check this list. Handwriting is hard to read, so MediSense asks you to confirm before going further.
+          {mode === 'home' ? 'Upload a photo of a strip or box, or type the name above.' : 'Please check this list. Handwriting is hard to read, so MediSense asks you to confirm before going further.'}
         </p>
       </div>
 
@@ -220,9 +275,9 @@ export default function UploadVerifyScreen({ medicines, onUpdateMedicines, onNav
         Check what we read
       </h2>
 
-      <div className="mb-3 text-[12px] uppercase tracking-wider text-[#5a605c] font-semibold">Sample data</div>
+      {mode === 'prescription' && !medicines.length && <p className="font-body-md text-[15px] text-[#5a605c] mb-6">No medicines yet. Upload a photo or type a name.</p>}
 
-      <div className="w-full overflow-x-auto bg-white mb-6 border border-[#d6d4cc]" style={{ borderRadius: '4px' }}>
+      {medicines.length > 0 && <div className="w-full overflow-x-auto bg-white mb-6 border border-[#d6d4cc]" style={{ borderRadius: '4px' }}>
         <table className="w-full text-left border-collapse" style={{ minWidth: '620px' }}>
           <thead>
             <tr style={{ backgroundColor: '#f5f4ef', borderBottom: '1px solid #d6d4cc' }}>
@@ -385,7 +440,7 @@ export default function UploadVerifyScreen({ medicines, onUpdateMedicines, onNav
             })}
           </tbody>
         </table>
-      </div>
+      </div>}
 
       {error && <p className="text-[#b3261e] mb-3">{error}</p>}
       {loading && <p className="text-[#5a605c] mb-3">Working...</p>}

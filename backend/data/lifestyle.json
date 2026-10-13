@@ -1,0 +1,74 @@
+[
+  {
+    "id": "fever_mild_pain",
+    "name": "Fever and mild pain",
+    "eat": [],
+    "avoid": [],
+    "rest": ["get lots of rest"],
+    "sources": ["https://www.nhs.uk/conditions/fever-in-adults/"],
+    "retrieved_on": "2026-10-13"
+  },
+  {
+    "id": "common_cold_cough",
+    "name": "Common cold and cough",
+    "eat": ["eat healthy food", "drink a hot lemon and honey drink to soothe a sore throat"],
+    "avoid": ["do not smoke", "avoid contact with other people until feeling better"],
+    "rest": ["get plenty of rest", "stay at home if not feeling well enough for normal activities"],
+    "sources": ["https://www.nhs.uk/conditions/common-cold/"],
+    "retrieved_on": "2026-10-13"
+  },
+  {
+    "id": "hay_fever",
+    "name": "Allergy and hay fever",
+    "eat": [],
+    "avoid": ["do not smoke or be around smoke", "do not spend too much time outside", "do not dry clothes outside"],
+    "rest": ["shower and change clothes after being outside"],
+    "sources": ["https://www.nhs.uk/conditions/hay-fever/"],
+    "retrieved_on": "2026-10-13"
+  },
+  {
+    "id": "acidity_heartburn",
+    "name": "Acidity and heartburn",
+    "eat": ["eat smaller more frequent meals"],
+    "avoid": ["do not have food or drink that triggers symptoms", "do not smoke", "do not drink too much alcohol", "do not eat before bed"],
+    "rest": ["try to find ways to relax"],
+    "sources": ["https://www.nhs.uk/conditions/heartburn-and-acid-reflux/"],
+    "retrieved_on": "2026-10-13"
+  },
+  {
+    "id": "urinary_tract_infection",
+    "name": "Urinary tract infection",
+    "eat": [],
+    "avoid": ["avoid drinks that may irritate the bladder such as fruit juices coffee and alcohol"],
+    "rest": ["rest and drink enough fluids so you pass pale urine regularly during the day"],
+    "sources": ["https://www.nhs.uk/conditions/urinary-tract-infections-utis/"],
+    "retrieved_on": "2026-10-13"
+  },
+  {
+    "id": "diarrhoea",
+    "name": "Diarrhoea",
+    "eat": ["eat when you feel able to", "avoid foods that are fatty or spicy"],
+    "avoid": ["do not have fruit juice or fizzy drinks"],
+    "rest": ["stay at home and get plenty of rest", "drink lots of fluids"],
+    "sources": ["https://www.nhs.uk/conditions/diarrhoea-and-vomiting/"],
+    "retrieved_on": "2026-10-13"
+  },
+  {
+    "id": "nausea_vomiting",
+    "name": "Nausea and vomiting",
+    "eat": ["eat smaller more frequent meals", "eat foods containing ginger"],
+    "avoid": ["do not eat or cook strong-smelling food", "do not eat hot fried or greasy food", "do not lie down soon after eating"],
+    "rest": ["get plenty of fresh air", "take regular sips of a cold drink"],
+    "sources": ["https://www.nhs.uk/conditions/feeling-sick-nausea/"],
+    "retrieved_on": "2026-10-13"
+  },
+  {
+    "id": "headache",
+    "name": "Headache",
+    "eat": ["do not skip meals"],
+    "avoid": ["do not drink alcohol", "do not strain your eyes for a long time"],
+    "rest": ["drink plenty of water", "try to relax", "get plenty of rest if you also have a cold or flu"],
+    "sources": ["https://www.nhs.uk/conditions/headaches/"],
+    "retrieved_on": "2026-10-13"
+  }
+]

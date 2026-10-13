@@ -35,6 +35,26 @@ def _cut_at_sentence(text):
     return text[: boundary + 1] if boundary >= 0 else text[:1200]
 
 
+AMOUNT_PATTERN = re.compile(
+    r"\d[\d,\.]*\s*(mg|mcg|g|ml|tablets?|caplets?|capsules?|teaspoons?|tsp|doses?)\b"
+    r"|\b\d+\s*(times|x)\s*(a|per)\s*day\b"
+    r"|\bevery\s+\d+\s*(to\s*\d+\s*)?hours?\b",
+    re.IGNORECASE,
+)
+
+
+def _clean_section(text, section):
+    text = " ".join(str(text or "").split())
+    # Remove a repeated leading heading, e.g. "Warnings Warnings ..." becomes "Warnings ..."
+    label = section.replace("_", " ")
+    if text.lower().startswith(label + " "):
+        text = text[len(label) + 1:]
+    # Drop any sentence that contains a dose amount
+    sentences = re.split(r"(?<=[.!?])\s+", text)
+    kept = [s for s in sentences if not AMOUNT_PATTERN.search(s)]
+    return " ".join(kept).strip()
+
+
 def _records_for(collection, generic):
     result = collection.get(where={"generic": generic}, include=["documents", "metadatas"])
     documents = result.get("documents") or []
@@ -63,7 +83,9 @@ def _read_generic(collection, generic):
         "generic": generic,
         "openfda_name": openfda_name,
         "sections": {
-            section: _cut_at_sentence(" ".join(section_text[section])) if section_text[section] else NOT_FOUND
+            section: (
+                _cut_at_sentence(_clean_section(" ".join(section_text[section]), section)) or NOT_FOUND
+            )
             for section in SECTION_KEYS
         },
     }
