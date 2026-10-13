@@ -36,8 +36,8 @@
     "drug_b": "clopidogrel",
     "severity": "major",
     "note": "Taking these medicines together can increase the risk of serious bleeding. Contact your doctor or pharmacist before the next dose.",
-    "source": "To verify",
-    "verified": false
+    "source": "https://www.nhs.uk/medicines/clopidogrel/taking-clopidogrel-with-other-medicines-and-herbal-supplements/",
+    "verified": true
   },
   {
     "drug_a": "warfarin",
@@ -76,16 +76,16 @@
     "drug_b": "aspirin",
     "severity": "moderate",
     "note": "These antiplatelet medicines can add to the risk of bleeding. Ask a doctor or pharmacist before taking them together.",
-    "source": "To verify",
-    "verified": false
+    "source": "https://www.nhs.uk/medicines/clopidogrel/taking-clopidogrel-with-other-medicines-and-herbal-supplements/",
+    "verified": true
   },
   {
     "drug_a": "clopidogrel",
     "drug_b": "ibuprofen",
     "severity": "moderate",
     "note": "Ibuprofen may add to the risk of bleeding with clopidogrel and can irritate the stomach. Ask a doctor or pharmacist before taking them together.",
-    "source": "To verify",
-    "verified": false
+    "source": "https://www.nhs.uk/medicines/clopidogrel/taking-clopidogrel-with-other-medicines-and-herbal-supplements/",
+    "verified": true
   },
   {
     "drug_a": "clopidogrel",
@@ -108,16 +108,16 @@
     "drug_b": "omeprazole",
     "severity": "moderate",
     "note": "Omeprazole may reduce how much clopidogrel is changed into its active form. Ask a doctor or pharmacist before taking them together.",
-    "source": "To verify",
-    "verified": false
+    "source": "https://www.nhs.uk/medicines/clopidogrel/taking-clopidogrel-with-other-medicines-and-herbal-supplements/",
+    "verified": true
   },
   {
     "drug_a": "ibuprofen",
     "drug_b": "aspirin",
     "severity": "moderate",
     "note": "These medicines can add to stomach irritation and bleeding risk. Ask a doctor or pharmacist before taking them together.",
-    "source": "To verify",
-    "verified": false
+    "source": "https://www.nhs.uk/medicines/ibuprofen-for-adults/",
+    "verified": true
   },
   {
     "drug_a": "ibuprofen",
@@ -132,8 +132,8 @@
     "drug_b": "naproxen",
     "severity": "moderate",
     "note": "Both medicines can add to stomach irritation and effects on the kidneys. Ask a doctor or pharmacist before taking them together.",
-    "source": "To verify",
-    "verified": false
+    "source": "https://www.nhs.uk/medicines/ibuprofen-for-adults/",
+    "verified": true
   },
   {
     "drug_a": "diclofenac",
