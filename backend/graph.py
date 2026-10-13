@@ -168,10 +168,60 @@ def knowledge_retrieval_node(state: MediSenseState) -> Dict[str, Any]:
     drug_matches = []
     
     if confirmed:
-        # Match user-confirmed names
-        for item in confirmed:
-            med_name = item.get("brand") if isinstance(item, dict) else str(item)
-            drug_matches.append(match_medicine(med_name))
+        existing_matches = state.get("matches", [])
+        extracted_meds = state.get("extracted_medicines", [])
+
+        for idx, item in enumerate(confirmed):
+            # 1. If item is already a match dictionary with matched=True, preserve it directly
+            if isinstance(item, dict) and item.get("matched") and item.get("generic"):
+                drug_matches.append(item)
+                continue
+
+            # 2. Extract medicine name string flexibly
+            if isinstance(item, dict):
+                cand_name = (
+                    item.get("brand")
+                    or item.get("name")
+                    or item.get("medicine")
+                    or item.get("medicine_name")
+                    or item.get("raw")
+                    or ""
+                )
+            else:
+                cand_name = str(item) if item is not None else ""
+
+            cand_clean = cand_name.strip()
+            if not cand_clean:
+                drug_matches.append(match_medicine(""))
+                continue
+
+            # 3. Check if cand_clean corresponds to an already verified match in existing_matches
+            matched_existing = None
+            cand_lower = cand_clean.lower()
+
+            for ex_idx, ex_m in enumerate(existing_matches):
+                if not ex_m.get("matched"):
+                    continue
+                ex_brand = (ex_m.get("brand") or "").strip().lower()
+                ex_generic = (ex_m.get("generic") or "").strip().lower()
+                ex_raw = ""
+                if ex_idx < len(extracted_meds):
+                    ex_raw = (extracted_meds[ex_idx].get("raw") or "").strip().lower()
+
+                if cand_lower in (ex_brand, ex_generic, ex_raw):
+                    matched_existing = ex_m
+                    break
+                if ex_brand and (ex_brand in cand_lower or cand_lower in ex_brand):
+                    matched_existing = ex_m
+                    break
+                if ex_raw and (cand_lower in ex_raw or ex_raw in cand_lower):
+                    matched_existing = ex_m
+                    break
+
+            if matched_existing:
+                drug_matches.append(matched_existing)
+            else:
+                drug_matches.append(match_medicine(cand_clean))
     else:
         drug_matches = state.get("matches", [])
 
@@ -216,8 +266,10 @@ def composer_node(state: MediSenseState) -> Dict[str, Any]:
     mode = state.get("mode", "prescription")
     
     if mode == "prescription":
+        confirmed = state.get("confirmed_medicines")
+        meds_to_use = confirmed if confirmed else state.get("extracted_medicines", [])
         result_obj = compose_prescription_result(
-            medicines=state.get("extracted_medicines", []),
+            medicines=meds_to_use,
             drug_matches=state.get("matches", []),
             drug_infos=state.get("drug_infos", {}),
             clashes=state.get("clashes", []),

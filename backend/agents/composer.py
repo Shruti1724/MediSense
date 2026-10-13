@@ -62,14 +62,21 @@ def compose_prescription_result(
             sources=condition_info.get("sources", ["Clinical Guidelines"])
         ))
     else:
-        # Fallback summary
-        matched_uses = [m.get("common_use") for m in drug_matches if m.get("common_use")]
-        use_summary = "; ".join(matched_uses) if matched_uses else "general treatment"
-        sections.append(Section(
-            title="Prescription Purpose",
-            body=f"This combination of medications is commonly used for: {use_summary}. Confirm specific diagnosis with your doctor.",
-            sources=["Clinical Drug Database"]
-        ))
+        # Fallback summary only if there are verified common uses
+        matched_uses = [m.get("common_use") for m in drug_matches if m.get("matched") and m.get("common_use")]
+        if matched_uses:
+            use_summary = "; ".join(matched_uses)
+            sections.append(Section(
+                title="Prescription Purpose",
+                body=f"This combination of medications is commonly used for: {use_summary}. Confirm specific diagnosis with your doctor.",
+                sources=["Clinical Drug Database"]
+            ))
+        else:
+            sections.append(Section(
+                title="Prescription Purpose",
+                body="Prescription purpose could not be verified because the prescribed medicines were not found in our verified database.",
+                sources=[]
+            ))
 
     # 3. Section: Individual Medicines Breakdown
     for i, match in enumerate(drug_matches):
@@ -111,7 +118,9 @@ def compose_prescription_result(
         ))
 
     # 4. Section: Diet and Lifestyle Guidance
-    if lifestyle_info.get("found"):
+    # Only include lifestyle tips if condition is grounded or at least one medicine is recognized
+    has_recognized_meds = any(m.get("matched") for m in drug_matches)
+    if lifestyle_info.get("found") and (condition_info.get("found") or has_recognized_meds):
         eat = ", ".join(lifestyle_info.get("eat", []))
         avoid = ", ".join(lifestyle_info.get("avoid", []))
         rest = ", ".join(lifestyle_info.get("rest", []))
@@ -128,7 +137,13 @@ def compose_prescription_result(
         ))
 
     # Determine overall outcome
-    outcome: Outcome = "needs_doctor" if has_major_clash else "ok"
+    has_unrecognized = any(not m.get("matched") for m in drug_matches) if drug_matches else True
+    if has_major_clash:
+        outcome: Outcome = "needs_doctor"
+    elif has_unrecognized:
+        outcome: Outcome = "cannot_verify"
+    else:
+        outcome: Outcome = "ok"
 
     # Self-Check Review Pass on every section
     cleaned_sections = []
