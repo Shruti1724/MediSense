@@ -69,7 +69,7 @@ def compose_prescription_result(
             sections.append(Section(
                 title="Prescription Purpose",
                 body=f"This combination of medications is commonly used for: {use_summary}. Confirm specific diagnosis with your doctor.",
-                sources=["Clinical Drug Database"]
+                sources=["medicines.csv"]
             ))
         else:
             sections.append(Section(

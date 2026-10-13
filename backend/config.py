@@ -5,16 +5,16 @@ import os
 # False = real local models through Ollama.
 MOCK_MODE = os.getenv("MOCK_MODE", "true").lower() == "true"
 
-# True  = use fake_tools.py. B sets this to false once the real tools in
-#         backend/tools/knowledge.py exist.
-USE_FAKE_TOOLS = os.getenv("USE_FAKE_TOOLS", "true").lower() == "true"
+# False = use real tools in backend/tools/knowledge.py.
+# True  = fallback to fake_tools.py.
+USE_FAKE_TOOLS = os.getenv("USE_FAKE_TOOLS", "false").lower() == "true"
 
 # Same model names on both laptops. Check ollama.com/library if a name fails.
 TEXT_MODEL = os.getenv("TEXT_MODEL", "llama3.2")
 VISION_MODEL = os.getenv("VISION_MODEL", "qwen2.5vl:3b")
 
-# Embeddings for RAG run through sentence-transformers (no Ollama needed).
-EMBED_MODEL = "all-MiniLM-L6-v2"
+# Embeddings for RAG run through nomic-embed-text via Ollama.
+EMBED_MODEL = "nomic-embed-text"
 
 # A prescription needs a clear photo: blur score below this means "ask for another".
 BLUR_THRESHOLD = 100.0

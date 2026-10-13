@@ -26,13 +26,14 @@ from agents.safety import check_emergency, check_dose_request
 from agents.home_check import evaluate_home_medicine
 from agents.composer import compose_answer_result
 
-# Import make_pdf from fake_tools or tools.knowledge
 if config.USE_FAKE_TOOLS:
     from fake_tools import make_pdf, match_medicine, get_drug_info, check_clashes
 else:
     try:
         from tools.knowledge import make_pdf, match_medicine, get_drug_info, check_clashes
-    except ImportError:
+    except Exception as e:
+        import logging
+        logging.warning(f"Could not import tools.knowledge ({e}); falling back to fake_tools.")
         from fake_tools import make_pdf, match_medicine, get_drug_info, check_clashes
 
 app = FastAPI(

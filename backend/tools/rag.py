@@ -113,6 +113,18 @@ def get_drug_info(generic: str) -> dict:
             return DrugInfo(found=False).model_dump()
 
         collection = get_collection()
+
+        # Try the whole name through _find_generic first (matches direct labels & aliases like amoxicillin+clavulanate)
+        entry = _find_generic(collection, requested)
+        if entry:
+            source = f"openFDA drug label ({entry['openfda_name']})" if entry["openfda_name"] else None
+            return DrugInfo(
+                found=True,
+                sections=entry["sections"],
+                sources=[source] if source else [],
+            ).model_dump()
+
+        # Fallback for combination products whose individual components have separate labels
         if "+" in requested:
             ingredients = [part.strip() for part in requested.split("+") if part.strip()]
             if not ingredients:
@@ -133,15 +145,7 @@ def get_drug_info(generic: str) -> dict:
             ]
             return DrugInfo(found=True, sections=sections, sources=sources).model_dump()
 
-        entry = _find_generic(collection, requested)
-        if not entry:
-            return DrugInfo(found=False).model_dump()
-        source = f"openFDA drug label ({entry['openfda_name']})" if entry["openfda_name"] else None
-        return DrugInfo(
-            found=True,
-            sections=entry["sections"],
-            sources=[source] if source else [],
-        ).model_dump()
+        return DrugInfo(found=False).model_dump()
     except Exception:
         return DrugInfo(found=False).model_dump()
 

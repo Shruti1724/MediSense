@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { askQuestion } from '../../api';
+
 
 const isValidExpiryDate = (value) => {
   if (!value || typeof value !== 'string') return false;
@@ -31,15 +33,42 @@ export default function CabinetScreen({ records, onRemoveRecord, onAddRecord, on
   const [newType, setNewType] = useState('Prescription');
   const [newExpiry, setNewExpiry] = useState('');
 
-  const handleTriggerClashes = () => {
+  const handleTriggerClashes = async () => {
     setIsCheckingClashes(true);
     setClashResult(null);
 
-    setTimeout(() => {
+    try {
+      const medList = records.map((r) => r.genericName || r.medicine).filter(Boolean);
+      if (medList.length < 2) {
+        setClashResult({
+          type: 'info',
+          message: 'At least 2 medicines are needed to evaluate potential clashes.',
+        });
+        setIsCheckingClashes(false);
+        return;
+      }
+      const data = await askQuestion('cabinet-check', 'Check for clashes between cabinet medicines', '', medList);
+      if (data && data.warnings && data.warnings.length > 0) {
+        setClashResult({
+          type: 'warning',
+          message: data.warnings.map((w) => w.text).join(' | '),
+        });
+      } else {
+        setClashResult({
+          type: 'success',
+          message: 'No clashes detected between your cabinet medicines in our verified database.',
+        });
+      }
+    } catch {
+      setClashResult({
+        type: 'error',
+        message: 'Unable to check clashes at this time. Please ensure backend is running.',
+      });
+    } finally {
       setIsCheckingClashes(false);
-      setClashResult('Sample result. Clash checking is connected in a later step.');
-    }, 600);
+    }
   };
+
 
   const handleAddNewSubmit = (event) => {
     event.preventDefault();
@@ -174,13 +203,28 @@ export default function CabinetScreen({ records, onRemoveRecord, onAddRecord, on
 
               {clashResult && (
                 <span
-                  className="font-body-sm text-[13px] text-[#1f5a46] inline-flex items-center gap-1.5 bg-[#eef3f0] p-2 border border-[#c2dad0]"
+                  className={`font-body-sm text-[13px] inline-flex items-center gap-1.5 p-2 border ${
+                    clashResult.type === 'warning'
+                      ? 'text-[#ba1a1a] bg-[#ffdad6] border-[#ffb4ab]'
+                      : clashResult.type === 'error'
+                      ? 'text-[#ba1a1a] bg-[#ffdad6] border-[#ffb4ab]'
+                      : clashResult.type === 'info'
+                      ? 'text-[#44474e] bg-[#e7e8ee] border-[#c4c6d0]'
+                      : 'text-[#1f5a46] bg-[#eef3f0] border-[#c2dad0]'
+                  }`}
                   style={{ borderRadius: '4px' }}
                 >
-                  <span className="material-symbols-outlined text-[18px] text-[#1f5a46]">verified</span>
-                  <span>{clashResult}</span>
+                  <span className="material-symbols-outlined text-[18px]">
+                    {clashResult.type === 'warning' || clashResult.type === 'error'
+                      ? 'warning'
+                      : clashResult.type === 'info'
+                      ? 'info'
+                      : 'verified'}
+                  </span>
+                  <span>{typeof clashResult === 'string' ? clashResult : clashResult.message}</span>
                 </span>
               )}
+
             </div>
           </div>
         </>

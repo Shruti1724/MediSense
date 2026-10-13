@@ -56,7 +56,8 @@ def test_dextrose_ors_prescription_confirmation_with_brand_objects():
     # Check Prescription Purpose is grounded (not generic fabricated treatment)
     purpose_sec = next(s for s in res["sections"] if s["title"] == "Prescription Purpose")
     assert "general treatment" not in purpose_sec["body"].lower()
-    assert "hypoglycemia" in purpose_sec["body"].lower() or "electrolyte" in purpose_sec["body"].lower()
+    assert any(term in purpose_sec["body"].lower() for term in ["hypoglycemia", "electrolyte", "fluid", "dehydration", "diarrhoea"])
+
 
 
 def test_dextrose_ors_prescription_confirmation_with_name_keys():

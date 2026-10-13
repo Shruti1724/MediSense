@@ -25,7 +25,9 @@ else:
             match_medicine, get_drug_info, check_clashes,
             get_condition_info, get_lifestyle, make_pdf
         )
-    except ImportError:
+    except Exception as e:
+        import logging
+        logging.warning(f"Could not import tools.knowledge ({e}); falling back to fake_tools.")
         from fake_tools import (
             match_medicine, get_drug_info, check_clashes,
             get_condition_info, get_lifestyle, make_pdf

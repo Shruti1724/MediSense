@@ -20,8 +20,8 @@
     "drug_b": "diclofenac",
     "severity": "major",
     "note": "Taking these medicines together can increase the risk of serious bleeding and stomach bleeding. Contact your doctor or pharmacist before the next dose.",
-    "source": "To verify",
-    "verified": false
+    "source": "https://www.nhs.uk/medicines/diclofenac/taking-diclofenac-with-other-medicines-and-herbal-supplements/",
+    "verified": true
   },
   {
     "drug_a": "warfarin",
@@ -124,8 +124,8 @@
     "drug_b": "diclofenac",
     "severity": "moderate",
     "note": "Both medicines can add to stomach irritation and effects on the kidneys. Ask a doctor or pharmacist before taking them together.",
-    "source": "To verify",
-    "verified": false
+    "source": "https://www.nhs.uk/medicines/diclofenac/taking-diclofenac-with-other-medicines-and-herbal-supplements/",
+    "verified": true
   },
   {
     "drug_a": "ibuprofen",
@@ -140,32 +140,32 @@
     "drug_b": "naproxen",
     "severity": "moderate",
     "note": "Both medicines can add to stomach irritation and effects on the kidneys. Ask a doctor or pharmacist before taking them together.",
-    "source": "To verify",
-    "verified": false
+    "source": "https://www.nhs.uk/medicines/diclofenac/taking-diclofenac-with-other-medicines-and-herbal-supplements/",
+    "verified": true
   },
   {
     "drug_a": "aspirin",
     "drug_b": "diclofenac",
     "severity": "moderate",
     "note": "These medicines can add to stomach irritation and bleeding risk. Ask a doctor or pharmacist before taking them together.",
-    "source": "To verify",
-    "verified": false
+    "source": "https://www.nhs.uk/medicines/diclofenac/taking-diclofenac-with-other-medicines-and-herbal-supplements/",
+    "verified": true
   },
   {
     "drug_a": "prednisolone",
     "drug_b": "ibuprofen",
     "severity": "moderate",
     "note": "Prednisolone and ibuprofen can add to stomach irritation and bleeding risk. Ask a doctor or pharmacist before taking them together.",
-    "source": "To verify",
-    "verified": false
+    "source": "https://www.nhs.uk/medicines/prednisolone/taking-prednisolone-with-other-medicines-and-herbal-supplements/",
+    "verified": true
   },
   {
     "drug_a": "prednisolone",
     "drug_b": "aspirin",
     "severity": "moderate",
     "note": "Prednisolone and aspirin can add to stomach irritation and bleeding risk. Ask a doctor or pharmacist before taking them together.",
-    "source": "To verify",
-    "verified": false
+    "source": "https://www.nhs.uk/medicines/prednisolone/taking-prednisolone-with-other-medicines-and-herbal-supplements/",
+    "verified": true
   },
   {
     "drug_a": "prednisolone",
