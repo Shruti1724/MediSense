@@ -1,0 +1,94 @@
+brand,generic,type,drug_class,common_use
+Dolo 650,paracetamol,OTC,analgesic/antipyretic,fever and mild pain
+Augmentin 625,amoxicillin+clavulanate,prescription-only,antibiotic,bacterial infections
+Brufen 400,ibuprofen,OTC,nsaid,pain and inflammation
+Warf 5,warfarin,prescription-only,anticoagulant,preventing blood clots
+Cetzine,cetirizine,OTC,antihistamine,allergy symptoms
+Pan 40,pantoprazole,prescription-only,ppi,acidity and reflux
+Crocin,paracetamol,OTC,analgesic/antipyretic,fever and mild pain
+Calpol,paracetamol,OTC,analgesic/antipyretic,fever and mild pain
+Azithral 500,azithromycin,prescription-only,antibiotic,bacterial infections
+Digene,aluminium hydroxide+magnesium hydroxide+simethicone,OTC,antacid,indigestion and bloating
+Allegra,fexofenadine,OTC,antihistamine,allergy symptoms
+Combiflam,ibuprofen+paracetamol,OTC,nsaid/analgesic,pain and fever
+Ecosprin 75,aspirin,prescription-only,antiplatelet,protecting against heart-related clotting
+Disprin,aspirin,OTC,analgesic,fever and mild pain
+ORS,oral rehydration salts,OTC,rehydration,fluid loss from vomiting or diarrhoea
+Becosules,vitamin b complex+vitamin c,OTC,multivitamin,overall nutrition support
+Limcee,vitamin c,OTC,vitamin supplement,boosting vitamin C intake
+Shelcal,calcium carbonate+vitamin d3,OTC,calcium supplement,calcium support
+Amlong,amlodipine,prescription-only,calcium channel blocker,blood pressure control
+Telma 40,telmisartan,prescription-only,arb,blood pressure control
+Glycomet 500,metformin,prescription-only,antidiabetic,managing blood sugar
+Atorva 10,atorvastatin,prescription-only,statin,cholesterol control
+Omez,omeprazole,prescription-only,ppi,acidity and reflux
+Zifi 200,cefixime,prescription-only,antibiotic,bacterial infections
+Meftal-Spas,mefenamic acid+dicyclomine,prescription-only,nsaid/antispasmodic,stomach cramps and period pain
+Cyclopam,dicyclomine+paracetamol,prescription-only,antispasmodic/analgesic,stomach cramps and pain
+Norflox,norfloxacin,prescription-only,antibiotic,bacterial infections
+Ciplox 500,ciprofloxacin,prescription-only,antibiotic,bacterial infections
+Montair LC,montelukast+levocetirizine,prescription-only,leukotriene antagonist/antihistamine,allergy symptoms and airway irritation
+Famocid,famotidine,prescription-only,h2 blocker,acidity and reflux
+Pacimol 500,paracetamol,OTC,analgesic/antipyretic,fever and mild pain
+Paracip 500,paracetamol,OTC,analgesic/antipyretic,fever and mild pain
+Ibugesic 400,ibuprofen,OTC,nsaid,pain and inflammation
+Loprin 75,aspirin,prescription-only,antiplatelet,protecting against heart-related clotting
+Ascard 75,aspirin,prescription-only,antiplatelet,protecting against heart-related clotting
+Novamox 500,amoxicillin,prescription-only,antibiotic,bacterial infections
+Mox 500,amoxicillin,prescription-only,antibiotic,bacterial infections
+Clavam 625,amoxicillin+clavulanate,prescription-only,antibiotic,bacterial infections
+Moxikind-CV 625,amoxicillin+clavulanate,prescription-only,antibiotic,bacterial infections
+Azee 500,azithromycin,prescription-only,antibiotic,bacterial infections
+Azee 250,azithromycin,prescription-only,antibiotic,bacterial infections
+Azax 500,azithromycin,prescription-only,antibiotic,bacterial infections
+Cetcip,cetirizine,OTC,antihistamine,allergy symptoms
+Okacet,cetirizine,OTC,antihistamine,allergy symptoms
+Zyncet,cetirizine,OTC,antihistamine,allergy symptoms
+Levocet,levocetirizine,OTC,antihistamine,allergy symptoms
+Montair 10,montelukast,prescription-only,leukotriene antagonist,allergy symptoms and airway irritation
+Montek 10,montelukast,prescription-only,leukotriene antagonist,allergy symptoms and airway irritation
+Romilast 10,montelukast,prescription-only,leukotriene antagonist,allergy symptoms and airway irritation
+Pantocid 40,pantoprazole,prescription-only,ppi,acidity and reflux
+Pantop 40,pantoprazole,prescription-only,ppi,acidity and reflux
+Pantin 40,pantoprazole,prescription-only,ppi,acidity and reflux
+Ocid 20,omeprazole,prescription-only,ppi,acidity and reflux
+Gluconorm 500,metformin,prescription-only,antidiabetic,managing blood sugar
+Obimet 500,metformin,prescription-only,antidiabetic,managing blood sugar
+Cetapin 500,metformin,prescription-only,antidiabetic,managing blood sugar
+Stamlo 5,amlodipine,prescription-only,calcium channel blocker,blood pressure control
+Amlip 5,amlodipine,prescription-only,calcium channel blocker,blood pressure control
+Amlodac 5,amlodipine,prescription-only,calcium channel blocker,blood pressure control
+Norvasc 5,amlodipine,prescription-only,calcium channel blocker,blood pressure control
+Telmikind 40,telmisartan,prescription-only,arb,blood pressure control
+Telsar 40,telmisartan,prescription-only,arb,blood pressure control
+Micardis 40,telmisartan,prescription-only,arb,blood pressure control
+Lipitor 10,atorvastatin,prescription-only,statin,cholesterol control
+Atorlip 10,atorvastatin,prescription-only,statin,cholesterol control
+Storvas 10,atorvastatin,prescription-only,statin,cholesterol control
+Cifran 500,ciprofloxacin,prescription-only,antibiotic,bacterial infections
+Ciplox 250,ciprofloxacin,prescription-only,antibiotic,bacterial infections
+Taxim-O 200,cefixime,prescription-only,antibiotic,bacterial infections
+Mahacef 200,cefixime,prescription-only,antibiotic,bacterial infections
+Cefspan 200,cefixime,prescription-only,antibiotic,bacterial infections
+Voveran 50,diclofenac,prescription-only,nsaid,pain and inflammation
+Naprosyn 250,naproxen,prescription-only,nsaid,pain and inflammation
+Ponstan 500,mefenamic acid,prescription-only,nsaid,pain and inflammation
+Warf 2,warfarin,prescription-only,anticoagulant,preventing blood clots
+Plavix 75,clopidogrel,prescription-only,antiplatelet,protecting against heart-related clotting
+Clopilet 75,clopidogrel,prescription-only,antiplatelet,protecting against heart-related clotting
+Deplatt 75,clopidogrel,prescription-only,antiplatelet,protecting against heart-related clotting
+Doxicip 100,doxycycline,prescription-only,antibiotic,bacterial infections
+Vibramycin 100,doxycycline,prescription-only,antibiotic,bacterial infections
+Wysolone 10,prednisolone,prescription-only,corticosteroid,inflammation and allergic conditions
+Omnacortil 10,prednisolone,prescription-only,corticosteroid,inflammation and allergic conditions
+Ondem 4,ondansetron,prescription-only,antiemetic,nausea and vomiting
+Emeset 4,ondansetron,prescription-only,antiemetic,nausea and vomiting
+Zofran 4,ondansetron,prescription-only,antiemetic,nausea and vomiting
+Electral,oral rehydration salts,OTC,rehydration,fluid loss from vomiting or diarrhoea
+Gelusil,aluminium hydroxide+magnesium hydroxide+simethicone,OTC,antacid,indigestion and bloating
+Eno,sodium bicarbonate+citric acid,OTC,antacid,acidity relief
+Zincovit,multivitamin,OTC,multivitamin,overall nutrition support
+Neurobion Forte,vitamin b complex,OTC,multivitamin,vitamin support
+Betadine,povidone iodine,OTC,antiseptic,minor cuts and skin cleansing
+Soframycin,framycetin,prescription-only,topical antibiotic,minor skin infections
+Iodex,methyl salicylate+menthol,OTC,topical analgesic,local muscle and joint pain

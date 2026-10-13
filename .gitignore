@@ -10,3 +10,9 @@ backend/uploads/*
 backend/tests/assets/*
 !backend/tests/assets/.gitkeep
 plan_extracted.txt
+node_modules/
+frontend/node_modules/
+dist/
+frontend/dist/
+backend/data/chroma/
+.DS_Store

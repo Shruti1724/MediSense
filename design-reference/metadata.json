@@ -1,0 +1,8 @@
+{
+  "name": "MediSense - Clinical Prescription & Medicine Verification",
+  "description": "Understand prescriptions and home medicines using verified clinical sources, drug interaction analysis, and pharmacological monographs.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
