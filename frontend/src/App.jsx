@@ -99,7 +99,7 @@ function AppContent() {
                 />
               }
             />
-            <Route path={SCREEN_PATHS.ask} element={<AskScreen />} />
+            <Route path={SCREEN_PATHS.ask} element={<AskScreen medicines={medicines} />} />
             <Route path="/result" element={<ResultPage />} />
           </Routes>
         </div>

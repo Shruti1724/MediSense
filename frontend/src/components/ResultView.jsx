@@ -14,6 +14,10 @@ export default function ResultView({ result }) {
   }
 
   const bannerRole = result.outcome === "emergency" ? "alert" : undefined;
+  const warnings = [...(result.warnings || [])].sort((first, second) => {
+    const order = { major: 0, moderate: 1, minor: 2 };
+    return (order[first.level] ?? 3) - (order[second.level] ?? 3);
+  });
 
   return (
     <main className="result-view">
@@ -21,11 +25,11 @@ export default function ResultView({ result }) {
         <h1>{outcomeLabels[result.outcome]}</h1>
       </div>
 
-      {result.warnings && result.warnings.length > 0 && (
+      {warnings.length > 0 && (
         <section className="warnings-section" aria-label="Warnings">
           <h2>Warnings</h2>
           <ul className="warning-list">
-            {result.warnings.map((warning, index) => (
+            {warnings.map((warning, index) => (
               <li
                 key={`${warning.level}-${index}`}
                 className={`warning warning-${warning.level}`}
@@ -52,7 +56,7 @@ export default function ResultView({ result }) {
               <p>{section.body}</p>
               <h3>Sources</h3>
               <ul className="source-list">
-                {section.sources.map((source, sourceIndex) => (
+                {(section.sources || []).map((source, sourceIndex) => (
                   <li key={`${source}-${sourceIndex}`}>{source}</li>
                 ))}
               </ul>

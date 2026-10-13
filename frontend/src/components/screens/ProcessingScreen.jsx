@@ -1,43 +1,53 @@
-import React, { useState, useEffect } from 'react';
-import { initialPipelineSteps } from '../../data/clinicalData';
+import React, { useEffect, useState } from 'react';
+import { getSteps } from '../../api';
 
 export default function ProcessingScreen({ onNavigate }) {
-  const [steps, setSteps] = useState(initialPipelineSteps);
-  const [completedCount, setCompletedCount] = useState(3);
-  const [isSimulating, setIsSimulating] = useState(false);
+  const [steps, setSteps] = useState([]);
+  const [visibleSteps, setVisibleSteps] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    let timer1;
-    let timer2;
+    let cancelled = false;
+    const sessionId = sessionStorage.getItem('medisense_session');
 
-    if (isSimulating) {
-      timer1 = setTimeout(() => {
-        setSteps((previous) =>
-          previous.map((step) => {
-            if (step.id === 4) return { ...step, status: 'Done' };
-            if (step.id === 5) return { ...step, status: 'In progress' };
-            return step;
-          })
-        );
-        setCompletedCount(4);
-      }, 1200);
-
-      timer2 = setTimeout(() => {
-        setSteps((previous) => previous.map((step) => ({ ...step, status: 'Done' })));
-        setCompletedCount(5);
-        setIsSimulating(false);
-      }, 2400);
+    if (!sessionId) {
+      setLoading(false);
+      setError('No active session. Please return to the upload screen.');
+      return () => {
+        cancelled = true;
+      };
     }
 
-    return () => {
-      clearTimeout(timer1);
-      clearTimeout(timer2);
-    };
-  }, [isSimulating]);
+    getSteps(sessionId)
+      .then((data) => {
+        if (cancelled) return;
+        setSteps(data.steps || []);
+        setVisibleSteps([]);
+        setLoading(false);
+      })
+      .catch((requestError) => {
+        if (cancelled) return;
+        setError(requestError.message || 'Could not reach the server. Is the backend running?');
+        setLoading(false);
+      });
 
-  const handleRunFullCheck = () => {
-    setIsSimulating(true);
-  };
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (loading || error || visibleSteps.length >= steps.length) return undefined;
+
+    const timer = window.setTimeout(() => {
+      setVisibleSteps((previous) => [...previous, steps[previous.length]]);
+    }, 400);
+
+    return () => window.clearTimeout(timer);
+  }, [error, loading, steps, visibleSteps.length]);
+
+  const isComplete = !loading && !error && visibleSteps.length === steps.length;
 
   return (
     <div className="w-full max-w-[720px] mx-auto pb-12">
@@ -54,85 +64,55 @@ export default function ProcessingScreen({ onNavigate }) {
       >
         Working on it
       </h1>
-      <p className="font-body-md text-[15px] text-[#5a605c] mb-8">
-        Checking each medicine against the saved medicine data.
-      </p>
+      <p className="font-body-md text-[15px] text-[#5a605c] mb-8">Checking each medicine against the saved medicine data.</p>
 
-      <div className="bg-white border border-[#d6d4cc] p-6 mb-6" style={{ borderRadius: '4px' }}>
+      {loading && <p className="font-body-md text-[15px] text-[#5a605c]">Loading steps...</p>}
+
+      {error && (
+        <div className="border border-[#ba1a1a] bg-[#ffdad6] p-4 mb-6" style={{ borderRadius: '4px' }}>
+          <p className="font-body-md text-[15px] text-[#93000a] mb-3">{error}</p>
+          <button
+            type="button"
+            onClick={() => onNavigate('upload')}
+            className="font-label-md text-[14px] text-[#93000a] underline bg-transparent border-0 p-0 cursor-pointer"
+          >
+            Back to upload
+          </button>
+        </div>
+      )}
+
+      {!loading && !error && (
+        <div className="bg-white border border-[#d6d4cc] p-6 mb-6" style={{ borderRadius: '4px' }}>
         <div className="text-[12px] font-semibold text-[#5a605c] uppercase tracking-wider mb-4 pb-2 border-b border-[#d6d4cc] flex items-center justify-between">
           <span>Steps</span>
           <span>Status</span>
         </div>
 
         <div className="flex flex-col space-y-1">
-          {steps.map((step) => {
-            const isInProgress = step.status === 'In progress';
-            const isDone = step.status === 'Done';
-            const isWaiting = step.status === 'Waiting';
-
+          {visibleSteps.map((step, index) => {
             return (
               <div
-                key={step.id}
-                className={`flex items-center justify-between py-2.5 px-3 transition-colors ${
-                  isInProgress
-                    ? 'bg-[#fdf0e2] border-l-[3px] border-[#b85c00]'
-                    : isWaiting
-                      ? 'opacity-75 hover:bg-[#f3f4f0]'
-                      : 'hover:bg-[#f3f4f0]'
-                }`}
+                key={`${step.time}-${index}`}
+                className="flex items-center justify-between py-2.5 px-3 hover:bg-[#f3f4f0]"
                 style={{ borderRadius: '4px' }}
               >
                 <div className="flex items-center space-x-3 min-w-0">
-                  <span
-                    className={`font-body-sm text-[13px] tabular-nums select-none ${
-                      isInProgress ? 'text-[#b85c00]' : 'text-[#5a605c]'
-                    }`}
-                  >
-                    {step.time}
-                  </span>
-                  <span
-                    className={`font-body-md text-[15px] truncate ${
-                      isInProgress
-                        ? 'text-[#1c1f1d] font-medium'
-                        : isWaiting
-                          ? 'text-[#5a605c]'
-                          : 'text-[#1c1f1d]'
-                    }`}
-                  >
-                    {step.label}
-                  </span>
+                  <span className="font-body-sm text-[13px] text-[#5a605c] tabular-nums select-none">{step.time}</span>
+                  <span className="font-body-md text-[15px] text-[#1c1f1d] truncate">{step.action}</span>
                 </div>
-
-                <div className="flex items-center space-x-2 pl-4 shrink-0">
-                  {isDone && (
-                    <>
-                      <div className="w-2 h-2 bg-[#1f5a46] shrink-0" />
-                      <span className="font-body-sm text-[13px] text-[#1f5a46] font-semibold">Done</span>
-                    </>
-                  )}
-                  {isInProgress && (
-                    <>
-                      <div className="w-2 h-2 bg-[#b85c00] shrink-0 animate-pulse" />
-                      <span className="font-body-sm text-[13px] text-[#b85c00] font-semibold">In progress</span>
-                    </>
-                  )}
-                  {isWaiting && (
-                    <>
-                      <div className="w-2 h-2 bg-[#5a605c] shrink-0" />
-                      <span className="font-body-sm text-[13px] text-[#5a605c]">Waiting</span>
-                    </>
-                  )}
-                </div>
+                <span className="font-body-sm text-[13px] text-[#5a605c] pl-4 shrink-0">{step.agent}</span>
               </div>
             );
           })}
         </div>
 
         <div className="mt-6 pt-4 border-t border-[#d6d4cc] flex items-center justify-between font-body-sm text-[13px] text-[#5a605c]">
-          <span className="tabular-nums font-medium">{completedCount} of 5 steps completed</span>
+          <span className="tabular-nums font-medium">{visibleSteps.length} of {steps.length} steps completed</span>
         </div>
-      </div>
+        </div>
+      )}
 
+      {isComplete && (
       <div
         className="border border-[#d6d4cc] bg-white p-4 mb-6"
         style={{ borderRadius: '4px' }}
@@ -141,9 +121,9 @@ export default function ProcessingScreen({ onNavigate }) {
           <div className="flex items-start space-x-3">
             <div className="w-2 h-2 bg-[#5a605c] mt-2 shrink-0" />
             <div>
-              <div className="font-title-md text-[16px] text-[#1c1f1d] font-semibold">Verification checkpoint</div>
+              <div className="font-title-md text-[16px] text-[#1c1f1d] font-semibold">Check complete</div>
               <div className="font-body-md text-[15px] text-[#5a605c]">
-                Waiting for you. Please confirm the list above to continue.
+                The confirmed medicine list has finished processing.
               </div>
             </div>
           </div>
@@ -163,22 +143,12 @@ export default function ProcessingScreen({ onNavigate }) {
               className="inline-flex items-center justify-center font-label-md text-[14px] text-white bg-[#1f5a46] hover:bg-[#004230] px-4 py-2 transition-colors whitespace-nowrap cursor-pointer border-0"
               style={{ borderRadius: '4px' }}
             >
-              View Report →
+              View Report
             </button>
           </div>
         </div>
       </div>
-
-      <div className="mb-8 flex justify-end">
-        <button
-          type="button"
-          onClick={handleRunFullCheck}
-          disabled={isSimulating || completedCount === 5}
-          className="text-[13px] text-[#1f5a46] underline hover:text-[#004230] bg-transparent border-0 cursor-pointer p-0"
-        >
-          {completedCount === 5 ? 'All 5 ingestion steps finalized' : 'Run automated remaining checks'}
-        </button>
-      </div>
+      )}
     </div>
   );
 }
