@@ -13,6 +13,9 @@ from agents.safety import check_emergency, check_dose_request, sanitize_and_revi
 from agents.home_check import evaluate_home_medicine
 from agents.composer import compose_prescription_result, compose_answer_result
 
+import logging
+logger = logging.getLogger("medisense.graph")
+
 # Import Member B knowledge tools per CONTRACT.md
 if config.USE_FAKE_TOOLS:
     from fake_tools import (
@@ -26,15 +29,15 @@ else:
             get_condition_info, get_lifestyle, make_pdf
         )
     except Exception as e:
-        import logging
-        logging.warning(f"Could not import tools.knowledge ({e}); falling back to fake_tools.")
+        logger.warning(f"Could not import tools.knowledge ({e}); falling back to fake_tools.")
         from fake_tools import (
             match_medicine, get_drug_info, check_clashes,
             get_condition_info, get_lifestyle, make_pdf
         )
 
 def log_step(state: MediSenseState, agent: str, action: str, result: str):
-    """Appends a new Step to the state's steps list."""
+    """Appends a new Step to the state's steps list and records per-stage log."""
+    logger.info("[%s] %s: %s", agent, action, result)
     if "steps" not in state or state["steps"] is None:
         state["steps"] = []
     state["steps"].append({
@@ -141,6 +144,29 @@ def extraction_node(state: MediSenseState) -> Dict[str, Any]:
     # Only prescription mode pauses for the editable user table
     # Home mode continues directly to evaluation/composer
     mode = state.get("mode", "prescription")
+    if not meds and mode == "home":
+        result = Result(
+            type="home_medicine",
+            outcome="cannot_verify",
+            warnings=[ResultWarning(level="moderate", text="Could not detect or read any medicine name from the image.")],
+            sections=[Section(
+                title="Medicine Identification",
+                body="We could not read a medicine name from this image. Please ensure the label is clearly visible or type the medicine name.",
+                sources=[]
+            )],
+            disclaimer=config.DISCLAIMER
+        ).model_dump()
+        log_step(state, "Extraction Agent", "No medicines detected in image", "Home check halted with cannot_verify")
+        return {
+            "blur_score": extracted.get("blur_score", 999.0),
+            "is_blurry": False,
+            "extracted_medicines": [],
+            "matches": [],
+            "requires_confirmation": False,
+            "result": result,
+            "status": "completed"
+        }
+
     requires_confirmation = (mode == "prescription")
 
     log_step(
@@ -228,6 +254,7 @@ def knowledge_retrieval_node(state: MediSenseState) -> Dict[str, Any]:
         drug_matches = state.get("matches", [])
 
     generics = [m.get("generic") for m in drug_matches if m.get("matched") and m.get("generic")]
+    brands = [m.get("brand") or m.get("generic") for m in drug_matches if m.get("matched") and m.get("generic")]
     drug_classes = [m.get("drug_class") for m in drug_matches if m.get("matched") and m.get("drug_class")]
 
     # 1. Fetch drug info per generic
@@ -236,7 +263,7 @@ def knowledge_retrieval_node(state: MediSenseState) -> Dict[str, Any]:
         drug_infos[gen] = get_drug_info(gen)
 
     # 2. Check clashes across all pairs of generics
-    clashes = check_clashes(generics) if len(generics) > 1 else []
+    clashes = check_clashes(generics, brands=brands) if len(generics) > 1 else []
 
     # 3. Get condition info
     condition_info = get_condition_info(drug_classes)

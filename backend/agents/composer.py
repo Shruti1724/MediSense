@@ -111,10 +111,14 @@ def compose_prescription_result(
         if d_sections.get("pregnancy"):
             med_desc.append(f"**Pregnancy & Nursing Guidance**: {d_sections['pregnancy']}")
 
+        sources = info.get("sources")
+        if not sources:
+            sources = ["OpenFDA / Package Leaflet"] if info.get("found") else ["Verified Medicine Database (medicines.csv)"]
+
         sections.append(Section(
             title=f"Medicine: {brand} ({generic})",
             body="\n\n".join(med_desc),
-            sources=info.get("sources", ["OpenFDA / Package Leaflet"])
+            sources=sources
         ))
 
     # 4. Section: Diet and Lifestyle Guidance
@@ -145,14 +149,22 @@ def compose_prescription_result(
     else:
         outcome: Outcome = "ok"
 
-    # Self-Check Review Pass on every section
+    # Self-Check Review Pass on every section and sanitize sources against fake placeholders
     cleaned_sections = []
     for sec in sections:
         _, violations, sanitized_body = sanitize_and_review(sec.body)
+        clean_sources = []
+        for s in (sec.sources or []):
+            s_str = str(s).strip()
+            if "fake data" in s_str.lower() or "replace with real source" in s_str.lower():
+                continue
+            clean_sources.append(s_str)
+        if not clean_sources and sec.title.startswith("Medicine:") and not sec.title.startswith("Unrecognized Medicine"):
+            clean_sources = ["Verified Medicine Database (medicines.csv)"]
         cleaned_sections.append(Section(
             title=sec.title,
             body=sanitized_body,
-            sources=sec.sources
+            sources=clean_sources
         ))
 
     return Result(

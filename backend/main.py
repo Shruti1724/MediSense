@@ -26,14 +26,16 @@ from agents.safety import check_emergency, check_dose_request
 from agents.home_check import evaluate_home_medicine
 from agents.composer import compose_answer_result
 
+import logging
+logger = logging.getLogger("medisense.main")
+
 if config.USE_FAKE_TOOLS:
     from fake_tools import make_pdf, match_medicine, get_drug_info, check_clashes
 else:
     try:
         from tools.knowledge import make_pdf, match_medicine, get_drug_info, check_clashes
     except Exception as e:
-        import logging
-        logging.warning(f"Could not import tools.knowledge ({e}); falling back to fake_tools.")
+        logger.warning(f"Could not import tools.knowledge ({e}); falling back to fake_tools.")
         from fake_tools import make_pdf, match_medicine, get_drug_info, check_clashes
 
 app = FastAPI(
@@ -92,6 +94,8 @@ async def start_session(
             f.write(content)
         image_path = save_path
 
+    logger.info("Session %s started: mode=%s, has_image=%s, has_typed_name=%s", session_id, mode, bool(image_path), bool(typed_name))
+
     # Initial state
     initial_state: MediSenseState = {
         "session_id": session_id,
@@ -112,6 +116,14 @@ async def start_session(
     # Execute graph up to confirmation pause or completion
     final_graph_state = agent_graph.invoke(initial_state)
     SESSIONS[session_id] = final_graph_state
+
+    logger.info(
+        "Session %s graph invoked: status=%s, extracted_count=%d, requires_confirmation=%s",
+        session_id,
+        final_graph_state.get("status"),
+        len(final_graph_state.get("extracted_medicines", [])),
+        final_graph_state.get("requires_confirmation", False)
+    )
 
     return {
         "session_id": session_id,
@@ -194,6 +206,7 @@ async def confirm_medicines(id: str, req: ConfirmRequest):
         raise HTTPException(status_code=404, detail="Session not found.")
 
     state = SESSIONS[id]
+    logger.info("Session %s confirm_medicines: confirming %d medicine(s)", id, len(req.medicines))
     
     # Log user confirmation step
     if "steps" not in state or state["steps"] is None:
@@ -314,8 +327,14 @@ async def ask_question(id: str, req: AskRequest):
             med_names = [m.get("brand") for m in state.get("matches", []) if m.get("brand")]
 
     matches = [match_medicine(name) for name in med_names] if med_names else []
-    generics = [m.get("generic") for m in matches if m.get("matched") and m.get("generic")]
-    clashes = check_clashes(generics) if len(generics) > 1 else []
+    matched_items = [
+        (med_names[i], m.get("brand") or med_names[i], m.get("generic"))
+        for i, m in enumerate(matches)
+        if m.get("matched") and m.get("generic")
+    ]
+    generics = [item[2] for item in matched_items]
+    brands = [item[1] for item in matched_items]
+    clashes = check_clashes(generics, brands=brands) if len(generics) > 1 else []
 
     primary_match = matches[0] if matches else {"matched": False}
     primary_generic = primary_match.get("generic")

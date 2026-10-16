@@ -49,8 +49,15 @@ def match_medicine(name: str) -> dict:
             typed_name,
             flags=re.IGNORECASE,
         ).strip()
+        cleaned_no_unit = re.sub(
+            r"(?<=\d)\s*(?:mg|ml|mcg|gm|g)\b",
+            "",
+            cleaned_typed,
+            flags=re.IGNORECASE,
+        ).strip()
         normalised_name = _normalise(typed_name)
         normalised_clean = _normalise(cleaned_typed)
+        normalised_no_unit = _normalise(cleaned_no_unit)
         if not normalised_name:
             return _empty_match()
 
@@ -62,8 +69,16 @@ def match_medicine(name: str) -> dict:
         for row_index, row in enumerate(rows):
             brand_norm = _normalise(row["brand"])
             generic_norm = _normalise(row["generic"])
-            b_score = max(fuzz.ratio(normalised_name, brand_norm), fuzz.ratio(normalised_clean, brand_norm)) / 100
-            g_score = max(fuzz.ratio(normalised_name, generic_norm), fuzz.ratio(normalised_clean, generic_norm)) / 100
+            b_score = max(
+                fuzz.ratio(normalised_name, brand_norm),
+                fuzz.ratio(normalised_clean, brand_norm),
+                fuzz.ratio(normalised_no_unit, brand_norm),
+            ) / 100
+            g_score = max(
+                fuzz.ratio(normalised_name, generic_norm),
+                fuzz.ratio(normalised_clean, generic_norm),
+                fuzz.ratio(normalised_no_unit, generic_norm),
+            ) / 100
             comparisons.append((b_score, row_index, "brand"))
             comparisons.append((g_score, row_index, "generic"))
 

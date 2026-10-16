@@ -38,7 +38,7 @@ export default function CabinetScreen({ records, onRemoveRecord, onAddRecord, on
     setClashResult(null);
 
     try {
-      const medList = records.map((r) => r.genericName || r.medicine).filter(Boolean);
+      const medList = records.map((r) => r.medicine || r.genericName).filter(Boolean);
       if (medList.length < 2) {
         setClashResult({
           type: 'info',
@@ -49,9 +49,23 @@ export default function CabinetScreen({ records, onRemoveRecord, onAddRecord, on
       }
       const data = await askQuestion('cabinet-check', 'Check for clashes between cabinet medicines', '', medList);
       if (data && data.warnings && data.warnings.length > 0) {
+        const clashWarnings = data.warnings.filter((w) => {
+          const t = (w.text || '').toLowerCase();
+          return (
+            t.includes('clash') ||
+            t.includes('contain') ||
+            t.includes('together') ||
+            t.includes('overdose') ||
+            t.includes('bleeding')
+          );
+        });
+        const warningsToShow = clashWarnings.length > 0 ? clashWarnings : data.warnings;
+
         setClashResult({
           type: 'warning',
-          message: data.warnings.map((w) => w.text).join(' | '),
+          title: `Detected ${warningsToShow.length} Medicine Clash${warningsToShow.length > 1 ? 'es' : ''}`,
+          items: warningsToShow.map((w) => w.text),
+          message: warningsToShow.map((w) => w.text).join('\n\n'),
         });
       } else {
         setClashResult({
@@ -188,43 +202,95 @@ export default function CabinetScreen({ records, onRemoveRecord, onAddRecord, on
             <p className="font-label-md text-[14px] text-[#1c1f1d] mb-3 font-semibold">
               MediSense checks all of these together for clashes.
             </p>
-            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-              <button
-                type="button"
-                onClick={handleTriggerClashes}
-                disabled={isCheckingClashes || records.length === 0}
-                className={`inline-flex items-center justify-center bg-[#1f5a46] text-white px-6 py-2.5 font-title-md text-[16px] hover:bg-[#004230] transition-colors border border-[#1f5a46] ${
-                  isCheckingClashes ? 'opacity-75 cursor-wait' : records.length === 0 ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'
-                }`}
-                style={{ borderRadius: '4px' }}
-              >
-                {isCheckingClashes ? 'Evaluating...' : 'Check for clashes'}
-              </button>
-
-              {clashResult && (
-                <span
-                  className={`font-body-sm text-[13px] inline-flex items-center gap-1.5 p-2 border ${
-                    clashResult.type === 'warning'
-                      ? 'text-[#ba1a1a] bg-[#ffdad6] border-[#ffb4ab]'
-                      : clashResult.type === 'error'
-                      ? 'text-[#ba1a1a] bg-[#ffdad6] border-[#ffb4ab]'
-                      : clashResult.type === 'info'
-                      ? 'text-[#44474e] bg-[#e7e8ee] border-[#c4c6d0]'
-                      : 'text-[#1f5a46] bg-[#eef3f0] border-[#c2dad0]'
+            <div className="flex flex-col gap-3">
+              <div>
+                <button
+                  type="button"
+                  id="btn-check-cabinet-clashes"
+                  onClick={handleTriggerClashes}
+                  disabled={isCheckingClashes || records.length === 0}
+                  className={`inline-flex items-center justify-center bg-[#1f5a46] text-white px-6 py-2.5 font-title-md text-[16px] hover:bg-[#004230] transition-colors border border-[#1f5a46] ${
+                    isCheckingClashes ? 'opacity-75 cursor-wait' : records.length === 0 ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'
                   }`}
                   style={{ borderRadius: '4px' }}
                 >
-                  <span className="material-symbols-outlined text-[18px]">
-                    {clashResult.type === 'warning' || clashResult.type === 'error'
-                      ? 'warning'
-                      : clashResult.type === 'info'
-                      ? 'info'
-                      : 'verified'}
+                  <span className="material-symbols-outlined text-[18px] mr-2">
+                    {isCheckingClashes ? 'sync' : 'health_and_safety'}
                   </span>
-                  <span>{typeof clashResult === 'string' ? clashResult : clashResult.message}</span>
-                </span>
-              )}
+                  <span>{isCheckingClashes ? 'Evaluating clashes...' : 'Check for clashes'}</span>
+                </button>
+              </div>
 
+              {clashResult && (
+                <div
+                  id="cabinet-clash-result"
+                  className={`w-full p-4 border rounded-[4px] transition-all ${
+                    clashResult.type === 'warning' || clashResult.type === 'error'
+                      ? 'text-[#410002] bg-[#ffdad6] border-[#ffb4ab]'
+                      : clashResult.type === 'info'
+                      ? 'text-[#44474e] bg-[#e7e8ee] border-[#c4c6d0]'
+                      : 'text-[#004230] bg-[#eef3f0] border-[#c2dad0]'
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <span className="material-symbols-outlined text-[24px] flex-shrink-0 mt-0.5">
+                      {clashResult.type === 'warning' || clashResult.type === 'error'
+                        ? 'warning'
+                        : clashResult.type === 'info'
+                        ? 'info'
+                        : 'verified'}
+                    </span>
+                    <div className="flex-1">
+                      <p className="font-semibold text-[15px]">
+                        {clashResult.type === 'warning'
+                          ? clashResult.title || 'Medicine Clashes Detected'
+                          : clashResult.type === 'error'
+                          ? 'Error'
+                          : clashResult.type === 'info'
+                          ? 'Notice'
+                          : 'No Clashes Detected'}
+                      </p>
+
+                      {clashResult.items && clashResult.items.length > 0 ? (
+                        <div className="mt-3 space-y-2.5">
+                          {clashResult.items.map((itemText, idx) => {
+                            const match = itemText.match(/^CLASH WARNING:\s*([^:]+):\s*(.+)$/i);
+                            if (match) {
+                              return (
+                                <div
+                                  key={idx}
+                                  className="bg-white/90 p-3 rounded-[4px] border border-[#ba1a1a33] text-[13px] leading-relaxed shadow-sm"
+                                >
+                                  <div className="font-bold text-[#ba1a1a] flex items-center gap-1.5 mb-1">
+                                    <span className="material-symbols-outlined text-[16px]">dangerous</span>
+                                    <span>Clashed Pair {idx + 1}: {match[1]}</span>
+                                  </div>
+                                  <p className="text-[#1c1f1d]">{match[2]}</p>
+                                </div>
+                              );
+                            }
+                            return (
+                              <div
+                                key={idx}
+                                className="bg-white/90 p-3 rounded-[4px] border border-[#ba1a1a33] text-[13px] leading-relaxed text-[#1c1f1d] shadow-sm"
+                              >
+                                {itemText}
+                              </div>
+                            );
+                          })}
+                          <div className="text-[12px] font-medium text-[#93000a] bg-white/70 p-2.5 rounded border border-[#ba1a1a33] mt-2">
+                            ⚠️ <strong>Clinical Safety Advice:</strong> When two medicines clash or duplicate active ingredients, taking them together on the same day can lead to accidental overdose, excessive sedation, or adverse reactions. Please consult your prescribing doctor or pharmacist before taking both.
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-[13px] mt-1 whitespace-pre-line leading-relaxed">
+                          {typeof clashResult === 'string' ? clashResult : clashResult.message}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </>

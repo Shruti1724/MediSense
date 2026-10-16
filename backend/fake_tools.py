@@ -102,7 +102,7 @@ def get_drug_info(generic: str) -> dict:
         return DrugInfo(found=False).model_dump()
     return DrugInfo(found=True, sections=sections, sources=[FAKE_SOURCE]).model_dump()
 
-def check_clashes(generics: List[str]) -> list:
+def check_clashes(generics: List[str], brands: List[str] = None) -> list:
     out = []
     for a, b in combinations([g.lower() for g in generics], 2):
         hit = _CLASHES.get(frozenset({a, b}))

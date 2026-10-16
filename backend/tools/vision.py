@@ -30,26 +30,56 @@ def check_blur(image_path: str) -> Tuple[float, bool]:
 
 def extract_json_from_text(text: str) -> Dict[str, Any]:
     """Helper to extract and parse JSON object from LLM response text."""
+    if not text or not str(text).strip():
+        return {"medicines": [], "expiry": None, "raw_text": ""}
+    
+    clean_text = text.strip()
     try:
         # Direct parse attempt
-        return json.loads(text.strip())
+        parsed = json.loads(clean_text)
+        if isinstance(parsed, dict):
+            return parsed
     except Exception:
         pass
     
     # Try finding markdown code block ```json ... ```
-    match = re.search(r"```(?:json)?\s*([\s\S]*?)\s*```", text)
+    match = re.search(r"```(?:json)?\s*([\s\S]*?)\s*```", clean_text)
     if match:
         try:
-            return json.loads(match.group(1).strip())
+            parsed = json.loads(match.group(1).strip())
+            if isinstance(parsed, dict):
+                return parsed
         except Exception:
             pass
             
-    # Try finding outermost { ... }
-    match = re.search(r"\{[\s\S]*\}", text)
+    # Try finding outermost { ... } with array repair
+    match = re.search(r"\{[\s\S]*\}", clean_text)
     if match:
+        raw_json = match.group(0).strip()
         try:
-            return json.loads(match.group(0).strip())
+            parsed = json.loads(raw_json)
+            if isinstance(parsed, dict):
+                return parsed
+        except Exception:
+            # Repair malformed array concatenation like `], [` -> `, `
+            try:
+                repaired = re.sub(r"\]\s*,\s*\[", ", ", raw_json)
+                parsed = json.loads(repaired)
+                if isinstance(parsed, dict):
+                    return parsed
+            except Exception:
+                pass
+
+    # Salvage individual medicine JSON objects matching {"raw": ..., "brand": ...}
+    med_objs = []
+    for m in re.finditer(r"\{[^{}]*\"(?:brand|raw)\"[^{}]*\}", clean_text):
+        try:
+            obj = json.loads(m.group(0))
+            if isinstance(obj, dict) and (obj.get("brand") or obj.get("raw")):
+                med_objs.append(obj)
         except Exception:
             pass
+    if med_objs:
+        return {"medicines": med_objs, "expiry": None}
             
-    return {"medicines": [], "expiry": None, "raw_text": text}
+    return {"medicines": [], "expiry": None, "raw_text": clean_text}

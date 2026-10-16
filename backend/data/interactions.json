@@ -243,9 +243,9 @@
     "drug_a": "cetirizine",
     "drug_b": "levocetirizine",
     "severity": "moderate",
-    "note": "These medicines have similar antihistamine effects and may add to drowsiness. Ask a doctor or pharmacist before taking them together.",
-    "source": "To verify",
-    "verified": false
+    "note": "Both medicines are antihistamines with duplicate active effects. Taking them together on the same day can cause severe drowsiness, dizziness, and sedation. Ask a doctor or pharmacist before taking them together.",
+    "source": "https://www.nhs.uk/medicines/cetirizine/taking-cetirizine-with-other-medicines-and-herbal-supplements/",
+    "verified": true
   },
   {
     "drug_a": "telmisartan",

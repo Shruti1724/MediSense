@@ -41,16 +41,20 @@ function AppContent() {
     setCabinetRecords((prev) => [record, ...prev]);
   };
 
-  const handleSavePrescriptionToCabinet = () => {
-    const newItems = medicines
-      .filter((medicine) => medicine.name.trim() !== '')
-      .map((medicine) => ({
-        id: `cab-${Date.now()}-${medicine.name.toLowerCase().replace(/\s+/g, '')}`,
-        medicine: medicine.name,
-        genericName: medicine.name,
-        type: 'Prescription',
-        expiry: 'Not set',
-      }));
+  const handleSavePrescriptionToCabinet = (customItems) => {
+    const list = customItems && customItems.length > 0 ? customItems : medicines;
+    const newItems = list
+      .map((item) => {
+        const name = typeof item === 'string' ? item.trim() : (item.name || item.brand || '').trim();
+        return {
+          id: `cab-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+          medicine: name,
+          genericName: name,
+          type: 'Prescription',
+          expiry: 'Not set',
+        };
+      })
+      .filter((record) => record.medicine.trim() !== '');
 
     setCabinetRecords((prev) => {
       const existingNames = new Set(prev.map((record) => record.genericName.toLowerCase()));
@@ -83,6 +87,7 @@ function AppContent() {
               element={
                 <ReportScreen
                   medicines={medicines}
+                  cabinetRecords={cabinetRecords}
                   onNavigate={handleNavigate}
                   onSaveToCabinet={handleSavePrescriptionToCabinet}
                 />

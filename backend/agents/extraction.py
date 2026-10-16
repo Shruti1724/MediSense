@@ -1,8 +1,10 @@
 """extraction.py - Prescription and strip extraction agent with few-shot learning and injection defence.
 Owner: Member A.
 """
+import os
 import re
 import json
+import logging
 from typing import Dict, Any, List, Optional
 import config
 from llm import ask_vision, ask_text
@@ -71,60 +73,145 @@ def detect_prompt_injection(text: str) -> bool:
             return True
     return False
 
+logger = logging.getLogger("medisense.extraction")
+
 def _extract_via_ocr(image_path: str):
     """
     Dynamically extracts medicine information from an image using local Tesseract OCR
-    and local LLM / heuristic extraction.
+    and rule-based / LLM extraction.
     """
+    logger.info("Initiating OCR extraction on image: %s", os.path.basename(image_path) if image_path else "None")
     try:
         from PIL import Image
         import pytesseract
         img = Image.open(image_path)
         ocr_text = pytesseract.image_to_string(img)
-    except Exception:
+    except Exception as e:
+        logger.warning("OCR failed to process image: %s", e)
         return [], None, False
 
     if not ocr_text or not ocr_text.strip():
+        logger.info("OCR returned empty text for image.")
         return [], None, False
 
     inj_flag = detect_prompt_injection(ocr_text)
+    if inj_flag:
+        logger.warning("Security alert: Prompt injection signature detected in OCR text.")
 
     # Check for expiry date
     exp_match = re.search(r"\b(?:exp(?:iry)?|use\s*before)[:\s\-]*([0-1]?\d[\/\-]\d{2,4})\b", ocr_text, re.IGNORECASE)
     raw_expiry = exp_match.group(1) if exp_match else None
 
-    # Attempt 1: High-accuracy rule-based parser on OCR text lines (Tab, Cap, Syp, etc.)
+    # Load known brands from CSV for robust identification
+    from tools.fuzzy import match_medicine, _load_medicines
+    medicines_db = _load_medicines()
+    known_brands = {m["brand"].lower() for m in medicines_db}
+
+    # Attempt 1: High-accuracy clinical prescription line parser
     meds = []
     lines = [l.strip() for l in ocr_text.splitlines() if l.strip()]
-    for line in lines:
-        prefix_match = re.match(r"^(?:tab(?:let)?|cap(?:sule)?|syp|syrup|inj(?:ection)?|ointment|oint)\.?\s+(.+)$", line, re.IGNORECASE)
+    logger.info("OCR extracted %d lines of text for parsing", len(lines))
+
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        
+        # Check if line looks like header, clinic name, doctor info, patient vitals, advice, or separator
+        if re.search(r'^(?:clinic|hospital|doctor|dr\.|patient|age|sex|wt|bp|temp|pulse|dx|c/o|imp|o/e|adv(?:ice)?|rx|#|=~|ph:|mob:|mmc reg|mon-sat|shop|timings|review after)', line, re.IGNORECASE):
+            # But line might start with 'Rx: Tab ...'
+            if not re.search(r'\b(?:tab(?:let)?|cap(?:sule)?|syp|syrup|inj(?:ection)?|oint(?:ment)?)\b', line, re.IGNORECASE):
+                i += 1
+                continue
+
+        # Strip line markers like '1. ', '2) ', 'Rx:', '- ', '* ', '• '
+        clean_line = re.sub(r'^(?:rx:?\s*|(?:#|\d+[\.\)\-:]|\([0-9]+\)|[-*•])\s*)+', '', line, flags=re.IGNORECASE).strip()
+        
+        # Form prefix match (Tab, Cap, Syp, etc.)
+        prefix_match = re.match(r'^(?:tab(?:let)?|cap(?:sule)?|syp|syrup|inj(?:ection)?|ointment|oint|drops?|sachet|gel|cream|susp(?:ension)?)\.?\s+(.+)$', clean_line, re.IGNORECASE)
+        
+        med_body = None
         if prefix_match:
             med_body = prefix_match.group(1).strip()
-            tokens = med_body.split()
-            clean_tokens = []
-            for tok in tokens:
-                if re.search(r"\b(1-1-1|1-0-1|1-0-0|0-0-1|days?|after|before|meal)\b", tok, re.IGNORECASE):
+        else:
+            # Check if clean_line starts with a known brand from medicines.csv or matches well
+            words = clean_line.split()
+            for n_words in range(min(4, len(words)), 0, -1):
+                candidate_prefix = ' '.join(words[:n_words]).lower()
+                candidate_prefix = re.sub(r'[^\w\s]', '', candidate_prefix).strip()
+                if candidate_prefix in known_brands or any(candidate_prefix == b.split()[0].lower() for b in known_brands if len(candidate_prefix) >= 4):
+                    med_body = clean_line
                     break
-                clean_tokens.append(tok)
-            clean_brand = " ".join(clean_tokens).strip()
-            clean_brand = re.sub(r"(\d+(?:\.\d+)?\s*(?:mg|ml|mcg|gm|g))\s+.*", r"\1", clean_brand).strip()
-            st_match = re.search(r"\b(\d+(?:\.\d+)?\s*(?:mg|ml|mcg|gm|g))\b", med_body, re.IGNORECASE)
-            strength = st_match.group(1).replace(" ", "") if st_match else None
-            fr_match = re.search(r"\b(1-1-1|1-0-1|1-0-0|0-0-1|OD|BD|TDS|HS|SOS|stat)\b", line, re.IGNORECASE)
-            frequency = fr_match.group(1) if fr_match else "1-0-1"
-            dur_match = re.search(r"\b(\d+)\s*days?\b", line, re.IGNORECASE)
-            dur_days = int(dur_match.group(1)) if dur_match else 5
+
+        if med_body:
+            # Check if next line contains continuation instructions (e.g., 'after food', '30 min before breakfast')
+            next_line = ''
+            if i + 1 < len(lines):
+                peek = lines[i + 1].strip()
+                if re.match(r'^(?:after|before|with|empty stomach|if fever|at bedtime|in the morning|twice|once|thrice|\d+\s*min)', peek, re.IGNORECASE):
+                    next_line = peek
+                    i += 1  # consume next line
+
+            # Extract frequency
+            fr_match = re.search(r'\b(1-1-1|1-0-1|1-0-0|0-0-1|0-1-0|2-0-0|0-0-2|1-1-0|0-1-1|OD|BD|TDS|QDS|QID|BID|TID|HS|SOS|PRN|stat)\b', med_body, re.IGNORECASE)
+            freq = fr_match.group(1) if fr_match else None
+            
+            # Combine timing instructions
+            timing = freq or ''
+            if next_line:
+                timing = f'{timing} ({next_line})'.strip() if timing else next_line
+            elif not timing:
+                instr_match = re.search(r'\b(after\s+(?:food|meal|dinner|lunch|breakfast)|before\s+(?:food|meal|breakfast)|at\s+bedtime|empty\s+stomach)\b', med_body, re.IGNORECASE)
+                if instr_match:
+                    timing = instr_match.group(1)
+
+            # Extract duration
+            dur_match = re.search(r'\b(\d+)\s*(days?|weeks?|months?)\b', med_body, re.IGNORECASE)
+            dur_days = int(dur_match.group(1)) if dur_match else None
+            if dur_match and 'week' in dur_match.group(2).lower():
+                dur_days = dur_days * 7
+            elif dur_match and 'month' in dur_match.group(2).lower():
+                dur_days = dur_days * 30
+
+            # Extract strength
+            st_match = re.search(r'\b(\d+(?:\.\d+)?\s*(?:mg|ml|mcg|gm|g|%|sachets?|iu|units?))\b', med_body, re.IGNORECASE)
+            strength = st_match.group(1) if st_match else None
+
+            # Extract brand candidate from tokens before frequency/duration
+            tokens = med_body.split()
+            name_tokens = []
+            for tok in tokens:
+                if re.search(r'\b(1-1-1|1-0-1|1-0-0|0-0-1|0-1-0|2-0-0|OD|BD|TDS|HS|SOS|stat|days?|weeks?|months?|after|before|meal|food|dinner|breakfast|lunch)\b', tok, re.IGNORECASE):
+                    break
+                name_tokens.append(tok)
+            brand_cand = ' '.join(name_tokens).strip()
+
+            if not strength and len(name_tokens) > 1 and name_tokens[-1].isdigit():
+                strength = name_tokens[-1] + ' mg'
+
+            # Match against database
+            match = match_medicine(brand_cand)
+            brand_name = match['brand'] if match['matched'] else brand_cand
+
+            # Grounded confidence calculation
+            if match['matched'] and match['score'] >= 0.90:
+                confidence = 0.95
+            elif match['matched']:
+                confidence = round(match['score'], 2)
+            else:
+                confidence = max(0.40, round(match['score'], 2))
 
             meds.append({
-                "raw": line,
-                "brand": clean_brand or med_body,
-                "strength": strength,
-                "frequency": frequency,
-                "duration_days": dur_days,
-                "confidence": 0.95
+                'raw': line,
+                'brand': brand_name,
+                'strength': strength,
+                'frequency': timing or 'As directed',
+                'duration_days': dur_days or 5,
+                'confidence': confidence
             })
+        i += 1
 
     if meds:
+        logger.info("Rule-based OCR parsing successfully extracted %d medicines.", len(meds))
         return meds, raw_expiry, inj_flag
 
     # Attempt 2: Call Ollama with local text model on OCR text
@@ -143,14 +230,30 @@ Respond ONLY with a valid JSON object matching:
             options={"temperature": 0.1}
         )
         content = reply.get("message", {}).get("content", "")
-        m_json = re.search(r"\{.*\}", content, re.DOTALL)
-        if m_json:
-            parsed = json.loads(m_json.group(0))
-            if parsed and parsed.get("medicines") and len(parsed["medicines"]) > 0:
-                return parsed["medicines"], parsed.get("expiry") or raw_expiry, parsed.get("injection_detected", False) or inj_flag
-    except Exception:
-        pass
+        parsed = extract_json_from_text(content)
+        parsed_meds = parsed.get("medicines", [])
+        if parsed_meds:
+            grounded_meds = []
+            for pm in parsed_meds:
+                cand_name = pm.get("brand") or pm.get("raw") or ""
+                m = match_medicine(cand_name)
+                conf = pm.get("confidence", 0.90)
+                if not m.get("matched"):
+                    conf = min(conf, 0.65)
+                grounded_meds.append({
+                    "raw": pm.get("raw") or cand_name,
+                    "brand": m["brand"] if m.get("matched") else cand_name,
+                    "strength": pm.get("strength"),
+                    "frequency": pm.get("frequency") or "As directed",
+                    "duration_days": pm.get("duration_days") or 5,
+                    "confidence": conf
+                })
+            logger.info("LLM extraction parsed %d medicine(s) from OCR text", len(grounded_meds))
+            return grounded_meds, parsed.get("expiry") or raw_expiry, parsed.get("injection_detected", False) or inj_flag
+    except Exception as e:
+        logger.warning("LLM OCR parsing attempt failed: %s", e)
 
+    logger.info("No medicines could be identified from OCR text.")
     return [], raw_expiry, inj_flag
 
 
@@ -167,17 +270,20 @@ def extract_prescription_data(image_path: Optional[str] = None, typed_name: Opti
     # 1. Handle typed name flow directly
     if typed_name and not image_path:
         clean_name = re.sub(r"(?i)ignore\s+your\s+rules|system\s+prompt|disregard.*", "", typed_name).strip()
+        from tools.fuzzy import match_medicine
+        match = match_medicine(clean_name or typed_name)
+        conf = 1.0 if match.get("matched") else 0.65
         return {
             "is_blurry": False,
             "blur_score": 999.0,
             "injection_detected": injection_flag,
             "medicines": [{
                 "raw": clean_name or typed_name,
-                "brand": clean_name or typed_name,
+                "brand": match.get("brand") if match.get("matched") else (clean_name or typed_name),
                 "strength": None,
                 "frequency": None,
                 "duration_days": None,
-                "confidence": 1.0
+                "confidence": conf
             }],
             "expiry": None,
             "expiry_info": check_expiry(None)
@@ -186,6 +292,7 @@ def extract_prescription_data(image_path: Optional[str] = None, typed_name: Opti
     # 2. Check blur if image is provided
     blur_score, is_blurry = check_blur(image_path)
     if is_blurry:
+        logger.info("Image rejected for blur: score=%.2f < threshold=%.2f", blur_score, config.BLUR_THRESHOLD)
         return {
             "is_blurry": True,
             "blur_score": blur_score,
@@ -252,8 +359,8 @@ def extract_prescription_data(image_path: Optional[str] = None, typed_name: Opti
                 }
             ]
             raw_expiry = None
-
         elif "clear_prescription" in filename or "clear.png" in filename:
+            # Clear prescription fixture (Test 1)
             meds = [{
                 "raw": "Tab. Augmentin 625",
                 "brand": "Augmentin 625",
@@ -266,21 +373,10 @@ def extract_prescription_data(image_path: Optional[str] = None, typed_name: Opti
         else:
             # Real uploaded image: extract dynamically with OCR!
             ocr_meds, ocr_exp, ocr_inj = _extract_via_ocr(image_path)
-            if ocr_meds:
-                meds = ocr_meds
-                raw_expiry = ocr_exp
-                if ocr_inj:
-                    injection_flag = True
-            else:
-                meds = [{
-                    "raw": "Tab. Augmentin 625",
-                    "brand": "Augmentin 625",
-                    "strength": "625 mg",
-                    "frequency": "1-0-1",
-                    "duration_days": 5,
-                    "confidence": 0.95
-                }]
-                raw_expiry = "12/2027"
+            meds = ocr_meds
+            raw_expiry = ocr_exp
+            if ocr_inj:
+                injection_flag = True
     else:
         ocr_meds, ocr_exp, ocr_inj = _extract_via_ocr(image_path)
         if ocr_meds:
@@ -294,7 +390,7 @@ def extract_prescription_data(image_path: Optional[str] = None, typed_name: Opti
                 injection_flag = True
             parsed = extract_json_from_text(vision_reply)
             meds = parsed.get("medicines", [])
-            raw_expiry = parsed.get("expiry")
+            raw_expiry = parsed.get("expiry") or ocr_exp
             if parsed.get("injection_detected"):
                 injection_flag = True
 

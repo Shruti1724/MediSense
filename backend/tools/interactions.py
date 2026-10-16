@@ -64,10 +64,13 @@ def _load_interactions():
         return (), frozenset()
 
 
-def check_clashes(generics: list[str]) -> list:
+def check_clashes(generics: list[str], brands: list[str] | None = None) -> list:
     try:
         if not generics or len(generics) < 2:
             return []
+        if brands is None or len(brands) != len(generics):
+            brands = list(generics)
+
         verified_pairs, known_ingredients = _load_interactions()
         entries = []
         for raw_entry in generics:
@@ -93,20 +96,37 @@ def check_clashes(generics: list[str]) -> list:
                     first_entry_for_ingredient[ingredient] = entry_index
 
         for ingredient, first_index, second_index in duplicate_ingredients:
-            key = ("ingredient", ingredient)
+            key = ("ingredient", ingredient, min(first_index, second_index), max(first_index, second_index))
             if key in emitted:
                 continue
             emitted.add(key)
+
+            name_a = brands[first_index].strip() if brands and first_index < len(brands) else generics[first_index].strip()
+            name_b = brands[second_index].strip() if brands and second_index < len(brands) else generics[second_index].strip()
+
+            if name_a.lower() != name_b.lower():
+                display_a = name_a
+                display_b = name_b
+                note = (
+                    f"Both {name_a} and {name_b} contain {ingredient}. "
+                    f"Taking them together on the same day can cause an accidental {ingredient} overdose. "
+                    "Contact your doctor or pharmacist before taking both."
+                )
+            else:
+                display_a = name_a
+                display_b = name_b
+                note = (
+                    f"More than one of these medicines contains {ingredient}. "
+                    "Taking them together can add up to too much of it. "
+                    "Contact your doctor or pharmacist before the next dose."
+                )
+
             clashes.append(
                 Clash(
-                    drug_a=generics[first_index].strip(),
-                    drug_b=generics[second_index].strip(),
+                    drug_a=display_a,
+                    drug_b=display_b,
                     severity="major",
-                    note=(
-                        f"More than one of these medicines contains {ingredient}. "
-                        "Taking them together can add up to too much of it. "
-                        "Contact your doctor or pharmacist before the next dose."
-                    ),
+                    note=note,
                     source="Ingredient check",
                 ).model_dump()
             )
@@ -122,14 +142,32 @@ def check_clashes(generics: list[str]) -> list:
                         if drug_a == drug_b:
                             continue
                         pair_key = _pair_key(drug_a, drug_b)
-                        if pair_key in emitted or pair_key not in verified_lookup:
+                        pair_emit_key = (pair_key, min(first_index, second_index), max(first_index, second_index))
+                        if pair_emit_key in emitted or pair_key not in verified_lookup:
                             continue
                         severity, note, source = verified_lookup[pair_key]
-                        emitted.add(pair_key)
+                        emitted.add(pair_emit_key)
+
+                        name_a = brands[first_index].strip() if brands and first_index < len(brands) else drug_a
+                        name_b = brands[second_index].strip() if brands and second_index < len(brands) else drug_b
+
+                        if name_a.lower() != drug_a.lower() and name_b.lower() != drug_b.lower():
+                            display_a = f"{name_a} ({drug_a})"
+                            display_b = f"{name_b} ({drug_b})"
+                        elif name_a.lower() != drug_a.lower():
+                            display_a = f"{name_a} ({drug_a})"
+                            display_b = name_b
+                        elif name_b.lower() != drug_b.lower():
+                            display_a = name_a
+                            display_b = f"{name_b} ({drug_b})"
+                        else:
+                            display_a = drug_a
+                            display_b = drug_b
+
                         clashes.append(
                             Clash(
-                                drug_a=drug_a,
-                                drug_b=drug_b,
+                                drug_a=display_a,
+                                drug_b=display_b,
                                 severity=severity,
                                 note=note,
                                 source=source,
